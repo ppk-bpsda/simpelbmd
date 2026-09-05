@@ -1,7 +1,7 @@
 # SIMPELBMD
 Sistem Manajemen Pemeliharaan & Barang Milik Daerah — static site (HTML/CSS/JS) + Supabase (Auth + Postgres).
 
-Status: Login, shell aplikasi, dashboard, serta **modul DPA dan Realisasi sudah berfungsi penuh** (CRUD, validasi, terhubung Supabase). Modul Pengadaan, Anggaran Kas, BBM, Pemeliharaan, Laporan, dan Master Data masih berupa halaman "dalam pengembangan", menunggu giliran dibangun — persis alur Fase 3–13 di master prompt Anda.
+Status: Login, shell aplikasi, dashboard, serta **modul DPA, Realisasi, Anggaran Kas, dan Pengadaan (BMD + Penyediaan BBM) sudah berfungsi penuh** (CRUD, validasi, terhubung Supabase). Modul BBM (kendaraan & kupon), Pemeliharaan, Laporan, dan Master Data masih berupa halaman "dalam pengembangan", menunggu giliran dibangun.
 
 ### Yang sudah bisa dipakai di modul DPA
 - Tambah/edit DPA dengan rincian rekening dinamis (baris bisa ditambah/dihapus), Jumlah dihitung otomatis (Volume × Harga Satuan), Total Pagu otomatis.
@@ -11,7 +11,21 @@ Status: Login, shell aplikasi, dashboard, serta **modul DPA dan Realisasi sudah 
 - Soft delete dengan konfirmasi.
 - Semua tersaring otomatis mengikuti Tahun Anggaran & Tahapan aktif di topbar.
 
-### Yang sudah bisa dipakai di modul Realisasi
+### Yang sudah bisa dipakai di modul Anggaran Kas
+- Ringkasan per rekening: Anggaran Kas, Realisasi, dan Sisa — dihitung otomatis dari view database.
+- Grafik Cash Flow bulanan (Anggaran Kas vs Realisasi) di seluruh rekening.
+- Editor 12 bulan per rekening dalam satu form: isi nilai tiap bulan, lihat realisasi (otomatis, readonly) dan sisa per bulan secara langsung, simpan sekaligus (upsert).
+- Tambah rekening baru langsung dari form, export ke Excel.
+
+### Yang sudah bisa dipakai di modul Pengadaan
+**Tab Pengadaan BMD:**
+- Tambah/edit pengadaan dengan rincian item barang dinamis (nama, merk/tipe, jumlah, satuan, harga satuan), Total dihitung otomatis.
+- Kategori BMD (Kendaraan/Peralatan/Mesin/Perlengkapan/BMD Lainnya), status (Proses/Selesai/Dibatalkan), nomor kontrak/SPK.
+- Tambah rekening & penyedia baru langsung dari form. Filter kategori, pencarian, export Excel, soft delete.
+
+**Tab Penyediaan BBM:**
+- Tambah/edit penyediaan BBM per jenis BBM, Nilai dihitung otomatis (Volume × Harga).
+- Terhubung ke rekening & penyedia yang sama dengan Master Data. Export Excel, soft delete.
 - Tambah/edit transaksi realisasi dengan nomor transaksi otomatis.
 - Saat memilih rekening & tanggal, sistem langsung menampilkan **Pagu DPA, Realisasi Sebelumnya, Sisa Pagu, dan Anggaran Kas bulan tersebut** — dihitung dari view database, bukan manual.
 - **Validasi blocking**: transaksi tidak bisa disimpan jika nilainya melebihi sisa pagu DPA rekening tersebut.

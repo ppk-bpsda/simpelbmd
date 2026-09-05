@@ -48,7 +48,7 @@
         </button>
         <div>
           <div class="page-title">Anggaran Kas</div>
-          <div class="page-crumb">Anggaran Kas Murni & Perubahan per bulan</div>
+          <div class="page-crumb">Anggaran Kas Murni &amp; Perubahan per bulan, per rekening</div>
         </div>
       </div>
       <div class="topbar-right">
@@ -59,10 +59,6 @@
             <option value="perubahan">Perubahan</option>
           </select>
         </div>
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" placeholder="Cari…" />
-        </div>
         <div class="user-chip" id="userChip"></div>
         <button class="icon-btn" id="logoutBtn" title="Keluar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -71,37 +67,123 @@
     </header>
 
     <div class="content">
-      <div class="wip-panel">
-        <div class="w-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4Z"/></svg>
+
+      <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr);">
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Total Anggaran Kas</span></div>
+          <div class="kpi-value" id="kpiTotalKas">Rp 0</div>
+          <div class="kpi-sub" id="kpiPeriode">—</div>
         </div>
-        <h3>Modul Anggaran Kas — dalam pengembangan tahap berikutnya</h3>
-        <p>Susun anggaran kas bulanan per rekening. Sisa anggaran kas dihitung otomatis (Anggaran Kas − Realisasi) dengan grafik cash flow bulanan.</p>
-        <div class="wip-fields">
-          <span>Bulan</span>
-          <span>Rekening</span>
-          <span>Anggaran Kas</span>
-          <span>Realisasi</span>
-          <span>Sisa</span>
+        <div class="kpi-card accent-signal">
+          <div class="kpi-top"><span class="kpi-label">Total Realisasi</span></div>
+          <div class="kpi-value" id="kpiTotalReal">Rp 0</div>
+          <div class="kpi-sub" id="kpiPersen">0% terserap</div>
         </div>
-        <div style="margin-top:26px;">
-          <a href="dashboard.html" class="btn btn-ghost btn-sm">← Kembali ke Dashboard</a>
+        <div class="kpi-card accent-ok">
+          <div class="kpi-top"><span class="kpi-label">Sisa Anggaran Kas</span></div>
+          <div class="kpi-value" id="kpiSisa">Rp 0</div>
+          <div class="kpi-sub">Anggaran Kas − Realisasi</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head">
+          <div><h3>Cash Flow Bulanan</h3><div class="panel-sub">Anggaran Kas vs Realisasi, seluruh rekening</div></div>
+        </div>
+        <canvas id="chartCashFlow" height="90"></canvas>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box" style="width:260px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="searchInput" placeholder="Cari rekening…" />
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-ghost btn-sm" id="btnExport">Export Excel</button>
+          <button class="btn btn-primary btn-sm" id="btnAddKas">+ Susun Anggaran Kas</button>
+        </div>
+      </div>
+
+      <div class="table-panel">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th>Rekening</th><th>Uraian</th><th style="text-align:right;">Anggaran Kas</th><th style="text-align:right;">Realisasi</th><th style="text-align:right;">Sisa</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="kasTableBody">
+              <tr><td colspan="6"><div class="skeleton" style="width:100%;height:18px;"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" style="display:none;">
+          <div class="empty-state">
+            <div class="e-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>
+            <h4>Belum ada Anggaran Kas</h4>
+            <p>Belum terdapat Anggaran Kas pada Tahun Anggaran dan Tahapan yang dipilih.</p>
+            <button class="btn btn-primary btn-sm" id="emptyAddBtn">+ Tambah Data</button>
+          </div>
         </div>
       </div>
     </div>
   </main>
 </div>
 
+<!-- Modal: Susun Anggaran Kas per rekening (12 bulan) -->
+<div class="modal-scrim" id="kasModal">
+  <div class="modal-box modal-wide">
+    <div class="modal-head">
+      <div><h3 id="kasModalTitle">Susun Anggaran Kas</h3><div class="m-sub">Isi nilai anggaran kas untuk setiap bulan pada rekening terpilih</div></div>
+      <button class="modal-close" id="kasModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="kasFormError"></div>
+      <div class="field">
+        <label>Rekening</label>
+        <div class="combo-row"><select id="fKasAccount"></select></div>
+      </div>
+
+      <div class="detail-rows" id="kasRows" style="margin-top:14px;">
+        <div class="detail-rows-head" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+          <div>Bulan</div><div>Anggaran Kas</div><div>Realisasi (otomatis)</div><div style="text-align:right;">Sisa</div>
+        </div>
+        <div id="kasRowsBody"></div>
+      </div>
+      <div class="detail-total-row">
+        <span>Total Anggaran Kas Setahun</span>
+        <strong id="kasTotalTahun">Rp 0</strong>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="kasCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="kasSaveBtn">Simpan Anggaran Kas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tambah Rekening cepat -->
+<div class="modal-scrim" id="accountModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Rekening Baru</h3><button class="modal-close" id="accountModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Kode Rekening</label><input type="text" id="newAccKode" placeholder="mis. 5.1.02.01" /></div>
+      <div class="field"><label>Uraian</label><input type="text" id="newAccUraian" placeholder="mis. Belanja ATK" /></div>
+      <div class="field"><label>Jenis Belanja</label><input type="text" id="newAccJenis" placeholder="mis. Belanja Barang dan Jasa" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="accountCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="accountSaveBtn">Simpan Rekening</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script>
-  (async () => {
-    const profile = await window.SIMPELBMD_UI.bootstrapPage();
-    if (!profile) return;
-    document.getElementById("ctxYear").textContent = localStorage.getItem("simpelbmd_ta") || "2026";
-    document.getElementById("ctxStage").value = localStorage.getItem("simpelbmd_tahapan") || "murni";
-  })();
-</script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/anggaran-kas.js"></script>
 </body>
 </html>
