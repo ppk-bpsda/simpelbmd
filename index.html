@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Masuk — SIMPELBMD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+  <div class="auth-visual">
+    <div class="grid-lines"></div>
+    <div class="glow"></div>
+
+    <div class="auth-brand">
+      <div class="mark">SB</div>
+      <div class="name">SIMPELBMD<small>Manajemen Pemeliharaan &amp; Barang Milik Daerah</small></div>
+    </div>
+
+    <div class="auth-headline">
+      <h1>Satu data, satu sistem, satu sumber kebenaran.</h1>
+      <p>Kelola DPA, pengadaan, anggaran kas, realisasi, BBM dan pemeliharaan kendaraan &amp; peralatan dalam satu alur yang saling terhubung dan mudah ditelusuri.</p>
+    </div>
+
+    <div class="auth-metrics">
+      <div><span>7</span><small>Modul keuangan &amp; aset</small></div>
+      <div><span>100%</span><small>Perhitungan otomatis</small></div>
+      <div><span>24/7</span><small>Audit trail tercatat</small></div>
+    </div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <form class="auth-form" id="loginForm" autocomplete="off">
+      <div class="mobile-brand">
+        <div class="mark" style="width:34px;height:34px;font-size:13px;">SB</div>
+        <div class="name" style="font-size:13px;">SIMPELBMD</div>
+      </div>
+
+      <h2>Masuk ke akun Anda</h2>
+      <span class="sub">Gunakan username yang terdaftar untuk melanjutkan.</span>
+
+      <div class="form-error" id="formError"></div>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <div class="input-row">
+          <input type="text" id="username" name="username" placeholder="mis. andi.operator" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="input-row">
+          <input type="password" id="password" name="password" placeholder="Masukkan password" required />
+          <button type="button" class="toggle-visibility" id="togglePw">Tampilkan</button>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="tahunAnggaran">Tahun Anggaran</label>
+          <select id="tahunAnggaran">
+            <option value="2027">2027</option>
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tahapan">Tahapan</label>
+          <select id="tahapan">
+            <option value="murni" selected>Murni</option>
+            <option value="perubahan">Perubahan</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" id="rememberMe" checked />
+        Ingat saya di perangkat ini
+      </label>
+
+      <button type="submit" class="btn btn-primary" id="submitBtn">Masuk</button>
+
+      <p class="auth-footnote">Lupa password? Hubungi administrator sistem Anda.</p>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script>
+  const pwInput = document.getElementById("password");
+  const toggleBtn = document.getElementById("togglePw");
+  toggleBtn.addEventListener("click", () => {
+    const isPw = pwInput.type === "password";
+    pwInput.type = isPw ? "text" : "password";
+    toggleBtn.textContent = isPw ? "Sembunyikan" : "Tampilkan";
+  });
+
+  // Jika sudah ada sesi aktif, langsung arahkan ke dashboard.
+  (async () => {
+    const profile = await window.SIMPELBMD.getCurrentProfile();
+    if (profile) window.location.href = "dashboard.html";
+  })();
+
+  const form = document.getElementById("loginForm");
+  const errorBox = document.getElementById("formError");
+  const submitBtn = document.getElementById("submitBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.classList.remove("show");
+
+    const username = document.getElementById("username").value.trim();
+    const password = pwInput.value;
+    const remember = document.getElementById("rememberMe").checked;
+    localStorage.setItem("simpelbmd_ta", document.getElementById("tahunAnggaran").value);
+    localStorage.setItem("simpelbmd_tahapan", document.getElementById("tahapan").value);
+
+    if (!username || !password) {
+      errorBox.textContent = "Username dan password wajib diisi.";
+      errorBox.classList.add("show");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Memproses...';
+
+    try {
+      await window.SIMPELBMD.loginWithUsername(username, password);
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      errorBox.textContent = err.message || "Terjadi kesalahan saat masuk.";
+      errorBox.classList.add("show");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Masuk";
+    }
+  });
+</script>
+</body>
+</html>
