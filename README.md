@@ -1,7 +1,25 @@
 # SIMPELBMD
 Sistem Manajemen Pemeliharaan & Barang Milik Daerah — static site (HTML/CSS/JS) + Supabase (Auth + Postgres).
 
-Status: **Fondasi (Fase 1–2)** sudah jalan — login, shell aplikasi, sidebar, dashboard dengan KPI & grafik, dan skema database lengkap untuk seluruh modul. Modul DPA, Pengadaan, Anggaran Kas, Realisasi, BBM, Pemeliharaan, Laporan, dan Master Data sudah punya halaman + navigasi + guard login, tampil sebagai "dalam pengembangan" sambil menunggu dibangun modul demi modul (CRUD, form, tabel) pada tahap berikutnya — persis alur Fase 3–13 di master prompt Anda.
+Status: Login, shell aplikasi, dashboard, serta **modul DPA dan Realisasi sudah berfungsi penuh** (CRUD, validasi, terhubung Supabase). Modul Pengadaan, Anggaran Kas, BBM, Pemeliharaan, Laporan, dan Master Data masih berupa halaman "dalam pengembangan", menunggu giliran dibangun — persis alur Fase 3–13 di master prompt Anda.
+
+### Yang sudah bisa dipakai di modul DPA
+- Tambah/edit DPA dengan rincian rekening dinamis (baris bisa ditambah/dihapus), Jumlah dihitung otomatis (Volume × Harga Satuan), Total Pagu otomatis.
+- Tambah rekening baru langsung dari form (tanpa harus ke Master Data dulu).
+- Import rincian dari Excel (kolom: `kode_rekening`, `satuan`, `volume`, `harga_satuan`) dengan preview & validasi baris sebelum disimpan.
+- Export daftar DPA ke Excel.
+- Soft delete dengan konfirmasi.
+- Semua tersaring otomatis mengikuti Tahun Anggaran & Tahapan aktif di topbar.
+
+### Yang sudah bisa dipakai di modul Realisasi
+- Tambah/edit transaksi realisasi dengan nomor transaksi otomatis.
+- Saat memilih rekening & tanggal, sistem langsung menampilkan **Pagu DPA, Realisasi Sebelumnya, Sisa Pagu, dan Anggaran Kas bulan tersebut** — dihitung dari view database, bukan manual.
+- **Validasi blocking**: transaksi tidak bisa disimpan jika nilainya melebihi sisa pagu DPA rekening tersebut.
+- **Validasi warning**: peringatan (tetap bisa disimpan) jika transaksi membuat realisasi bulan berjalan melebihi Anggaran Kas.
+- Alur status: Draft → diajukan verifikasi → Diverifikasi → disetujui/ditolak Admin. Operator tidak bisa menyetujui/menolak sendiri.
+- Hapus (soft delete) hanya untuk Admin dan hanya pada status Draft.
+- Filter status & rekening, pencarian, export Excel.
+- Setiap aksi (buat, ubah, setujui, tolak, hapus) tercatat ke `audit_logs`.
 
 ## Struktur folder
 ```

@@ -48,7 +48,7 @@
         </button>
         <div>
           <div class="page-title">DPA</div>
-          <div class="page-crumb">Dokumen Pelaksanaan Anggaran — Murni & Perubahan</div>
+          <div class="page-crumb">Dokumen Pelaksanaan Anggaran — Murni &amp; Perubahan</div>
         </div>
       </div>
       <div class="topbar-right">
@@ -59,10 +59,6 @@
             <option value="perubahan">Perubahan</option>
           </select>
         </div>
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" placeholder="Cari…" />
-        </div>
         <div class="user-chip" id="userChip"></div>
         <button class="icon-btn" id="logoutBtn" title="Keluar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -71,38 +67,167 @@
     </header>
 
     <div class="content">
-      <div class="wip-panel">
-        <div class="w-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4Z"/></svg>
+
+      <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr);">
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Total Pagu DPA</span></div>
+          <div class="kpi-value" id="kpiTotalPagu">Rp 0</div>
+          <div class="kpi-sub" id="kpiPeriode">—</div>
         </div>
-        <h3>Modul DPA — dalam pengembangan tahap berikutnya</h3>
-        <p>Kelola DPA Murni dan Perubahan lengkap dengan rincian rekening, pagu, volume dan harga satuan. Jumlah dihitung otomatis (Volume × Harga Satuan) dan DPA aktif ditentukan dari tanggal penetapan.</p>
-        <div class="wip-fields">
-          <span>Nomor DPA</span>
-          <span>Tanggal Penetapan</span>
-          <span>Kode Rekening</span>
-          <span>Volume</span>
-          <span>Harga Satuan</span>
-          <span>Pagu</span>
+        <div class="kpi-card accent-signal">
+          <div class="kpi-top"><span class="kpi-label">Jumlah Dokumen DPA</span></div>
+          <div class="kpi-value" id="kpiJumlahDpa">0</div>
+          <div class="kpi-sub">Aktif pada periode berjalan</div>
         </div>
-        <div style="margin-top:26px;">
-          <a href="dashboard.html" class="btn btn-ghost btn-sm">← Kembali ke Dashboard</a>
+        <div class="kpi-card accent-ok">
+          <div class="kpi-top"><span class="kpi-label">Total Baris Rincian</span></div>
+          <div class="kpi-value" id="kpiJumlahRincian">0</div>
+          <div class="kpi-sub">Seluruh rekening belanja</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box" style="width:260px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="searchInput" placeholder="Cari nomor DPA…" />
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-ghost btn-sm" id="btnExport">Export Excel</button>
+          <button class="btn btn-ghost btn-sm" id="btnImport">Import Rincian</button>
+          <button class="btn btn-primary btn-sm" id="btnAddDpa">+ Tambah DPA</button>
+        </div>
+      </div>
+
+      <div class="table-panel">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th>Nomor DPA</th><th>Tanggal Penetapan</th><th>Tahapan</th><th>Jml. Rincian</th><th style="text-align:right;">Total Pagu</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="dpaTableBody">
+              <tr><td colspan="7"><div class="skeleton" style="width:100%;height:18px;"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" style="display:none;">
+          <div class="empty-state">
+            <div class="e-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/></svg></div>
+            <h4>Belum ada data DPA</h4>
+            <p>Belum terdapat DPA pada Tahun Anggaran dan Tahapan yang dipilih.</p>
+            <button class="btn btn-primary btn-sm" id="emptyAddBtn">+ Tambah Data</button>
+          </div>
         </div>
       </div>
     </div>
   </main>
 </div>
 
+<!-- Modal: Tambah/Edit DPA -->
+<div class="modal-scrim" id="dpaModal">
+  <div class="modal-box modal-wide">
+    <div class="modal-head">
+      <div>
+        <h3 id="dpaModalTitle">Tambah DPA</h3>
+        <div class="m-sub">Jumlah setiap baris dihitung otomatis (Volume x Harga Satuan)</div>
+      </div>
+      <button class="modal-close" id="dpaModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="dpaFormError"></div>
+      <div class="form-grid cols-3">
+        <div class="field"><label>Tahun Anggaran</label><input type="text" id="fFiscalYear" disabled /></div>
+        <div class="field"><label>Tahapan</label><input type="text" id="fStage" disabled /></div>
+        <div class="field"><label>Nomor DPA</label><input type="text" id="fNomorDpa" placeholder="mis. DPA/2026/M/001" /></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Tanggal Penetapan</label><input type="date" id="fTanggalPenetapan" /></div>
+        <div class="field"><label>Keterangan (opsional)</label><input type="text" id="fKeterangan" placeholder="Program / kegiatan terkait" /></div>
+      </div>
+
+      <label style="display:block;font-size:13px;color:var(--text-2);margin:18px 0 8px;">Rincian Rekening Belanja</label>
+      <div class="detail-rows" id="detailRows">
+        <div class="detail-rows-head">
+          <div>Rekening</div><div>Satuan</div><div>Volume</div><div>Harga Satuan</div><div style="text-align:right;">Jumlah</div><div></div>
+        </div>
+        <div id="detailRowsBody"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" id="addRowBtn">+ Tambah Baris Rekening</button>
+
+      <div class="detail-total-row">
+        <span>Total Pagu</span>
+        <strong id="detailTotalPagu">Rp 0</strong>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="foot-note" id="dpaFootNote"></span>
+      <button class="btn btn-ghost btn-sm" id="dpaCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="dpaSaveBtn">Simpan DPA</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tambah Rekening cepat -->
+<div class="modal-scrim" id="accountModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Rekening Baru</h3><button class="modal-close" id="accountModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Kode Rekening</label><input type="text" id="newAccKode" placeholder="mis. 5.1.02.01" /></div>
+      <div class="field"><label>Uraian</label><input type="text" id="newAccUraian" placeholder="mis. Belanja ATK" /></div>
+      <div class="field"><label>Jenis Belanja</label><input type="text" id="newAccJenis" placeholder="mis. Belanja Barang dan Jasa" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="accountCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="accountSaveBtn">Simpan Rekening</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Import Rincian Excel -->
+<div class="modal-scrim" id="importModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div><h3>Import Rincian dari Excel</h3><div class="m-sub">Kolom: kode_rekening, satuan, volume, harga_satuan</div></div>
+      <button class="modal-close" id="importModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Pilih DPA Tujuan</label><select id="importDpaSelect"></select></div>
+      <div class="field"><label>File Excel (.xlsx)</label><input type="file" id="importFile" accept=".xlsx,.xls" /></div>
+      <div id="importPreviewWrap" style="display:none;">
+        <div class="alert alert-info" id="importSummary"></div>
+        <div class="table-scroll" style="max-height:280px;overflow-y:auto;">
+          <table class="data-table" id="importPreviewTable"></table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="importCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="importConfirmBtn" disabled>Konfirmasi Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Konfirmasi Hapus -->
+<div class="modal-scrim" id="deleteModal">
+  <div class="modal-box confirm-box">
+    <div class="modal-body" style="padding-top:24px;">
+      <div class="confirm-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div>
+      <h3 style="font-size:15px;margin-bottom:8px;">Hapus DPA ini?</h3>
+      <p style="font-size:13.5px;color:var(--text-2);" id="deleteConfirmText">Data akan disembunyikan dari daftar namun tetap tersimpan untuk audit (soft delete).</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="deleteCancelBtn">Batal</button>
+      <button class="btn btn-danger btn-sm" id="deleteConfirmBtn">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script>
-  (async () => {
-    const profile = await window.SIMPELBMD_UI.bootstrapPage();
-    if (!profile) return;
-    document.getElementById("ctxYear").textContent = localStorage.getItem("simpelbmd_ta") || "2026";
-    document.getElementById("ctxStage").value = localStorage.getItem("simpelbmd_tahapan") || "murni";
-  })();
-</script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/dpa.js"></script>
 </body>
 </html>

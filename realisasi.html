@@ -48,7 +48,7 @@
         </button>
         <div>
           <div class="page-title">Realisasi</div>
-          <div class="page-crumb">Realisasi belanja & validasi terhadap pagu DPA</div>
+          <div class="page-crumb">Realisasi belanja &amp; validasi terhadap pagu DPA</div>
         </div>
       </div>
       <div class="topbar-right">
@@ -59,10 +59,6 @@
             <option value="perubahan">Perubahan</option>
           </select>
         </div>
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" placeholder="Cari…" />
-        </div>
         <div class="user-chip" id="userChip"></div>
         <button class="icon-btn" id="logoutBtn" title="Keluar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -71,38 +67,177 @@
     </header>
 
     <div class="content">
-      <div class="wip-panel">
-        <div class="w-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4Z"/></svg>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Total Realisasi</span></div>
+          <div class="kpi-value" id="kpiTotalRealisasi">Rp 0</div>
+          <div class="kpi-sub" id="kpiPeriode">—</div>
         </div>
-        <h3>Modul Realisasi — dalam pengembangan tahap berikutnya</h3>
-        <p>Input realisasi dengan validasi otomatis terhadap sisa pagu DPA dan anggaran kas. Status transaksi: Draft, Diverifikasi, Disetujui, Ditolak — lengkap dengan lampiran dokumen.</p>
-        <div class="wip-fields">
-          <span>No. Transaksi</span>
-          <span>No. SPJ</span>
-          <span>Rekening</span>
-          <span>Nilai</span>
-          <span>Status</span>
-          <span>Lampiran</span>
+        <div class="kpi-card accent-ok">
+          <div class="kpi-top"><span class="kpi-label">Disetujui</span></div>
+          <div class="kpi-value" id="kpiDisetujui">0</div>
+          <div class="kpi-sub">Transaksi</div>
         </div>
-        <div style="margin-top:26px;">
-          <a href="dashboard.html" class="btn btn-ghost btn-sm">← Kembali ke Dashboard</a>
+        <div class="kpi-card accent-warn">
+          <div class="kpi-top"><span class="kpi-label">Menunggu Verifikasi</span></div>
+          <div class="kpi-value" id="kpiPending">0</div>
+          <div class="kpi-sub">Draft + Diverifikasi</div>
+        </div>
+        <div class="kpi-card accent-signal">
+          <div class="kpi-top"><span class="kpi-label">Ditolak</span></div>
+          <div class="kpi-value" id="kpiDitolak">0</div>
+          <div class="kpi-sub">Transaksi</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box" style="width:230px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="searchInput" placeholder="Cari no. transaksi / uraian…" />
+          </div>
+          <select class="filter-select" id="filterStatus">
+            <option value="">Semua Status</option>
+            <option value="draft">Draft</option>
+            <option value="diverifikasi">Diverifikasi</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="ditolak">Ditolak</option>
+          </select>
+          <select class="filter-select" id="filterAccount"><option value="">Semua Rekening</option></select>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-ghost btn-sm" id="btnExport">Export Excel</button>
+          <button class="btn btn-primary btn-sm" id="btnAddRealisasi">+ Tambah Realisasi</button>
+        </div>
+      </div>
+
+      <div class="table-panel">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th>No. Transaksi</th><th>Tanggal</th><th>Rekening</th><th>Uraian</th><th>Penyedia</th><th style="text-align:right;">Nilai</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="realTableBody">
+              <tr><td colspan="8"><div class="skeleton" style="width:100%;height:18px;"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" style="display:none;">
+          <div class="empty-state">
+            <div class="e-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+            <h4>Belum ada transaksi realisasi</h4>
+            <p>Belum terdapat transaksi pada periode dan filter yang dipilih.</p>
+            <button class="btn btn-primary btn-sm" id="emptyAddBtn">+ Tambah Data</button>
+          </div>
         </div>
       </div>
     </div>
   </main>
 </div>
 
+<!-- Modal: Tambah/Edit Realisasi -->
+<div class="modal-scrim" id="realModal">
+  <div class="modal-box modal-wide">
+    <div class="modal-head">
+      <div><h3 id="realModalTitle">Tambah Realisasi</h3><div class="m-sub">Sisa pagu &amp; anggaran kas dihitung otomatis dari data DPA</div></div>
+      <button class="modal-close" id="realModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="realFormError"></div>
+      <div id="realWarnBox"></div>
+
+      <div class="form-grid cols-3">
+        <div class="field"><label>Nomor Transaksi</label><input type="text" id="fNomorTransaksi" /></div>
+        <div class="field"><label>Tanggal</label><input type="date" id="fTanggal" /></div>
+        <div class="field">
+          <label>Rekening</label>
+          <div class="combo-row"><select id="fAccount"></select></div>
+        </div>
+      </div>
+
+      <div class="calc-strip" id="calcStrip" style="display:none;">
+        <div>Pagu DPA<strong id="calcPagu">Rp 0</strong></div>
+        <div>Realisasi Sebelumnya<strong id="calcRealisasi">Rp 0</strong></div>
+        <div>Sisa Pagu<strong id="calcSisa">Rp 0</strong></div>
+        <div>Anggaran Kas Bulan Ini<strong id="calcKas">Rp 0</strong></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field span-2"><label>Uraian</label><input type="text" id="fUraian" placeholder="Deskripsi transaksi belanja" /></div>
+      </div>
+      <div class="form-grid cols-3">
+        <div class="field"><label>Nomor SPJ</label><input type="text" id="fNomorSpj" /></div>
+        <div class="field"><label>Nomor Bukti</label><input type="text" id="fNomorBukti" /></div>
+        <div class="field"><label>Nilai (Rp)</label><input type="number" id="fNilai" min="0" step="1" /></div>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Penyedia</label>
+          <div class="combo-row"><select id="fVendor"><option value="">— Tanpa penyedia —</option></select></div>
+        </div>
+        <div class="field"><label>Jenis Belanja</label><input type="text" id="fJenisBelanja" placeholder="mis. Belanja Barang dan Jasa" /></div>
+      </div>
+      <div class="field"><label>Keterangan (opsional)</label><textarea id="fKeterangan"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <span class="foot-note" id="realFootNote"></span>
+      <button class="btn btn-ghost btn-sm" id="realCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="realSaveBtn">Simpan Realisasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tambah Penyedia cepat -->
+<div class="modal-scrim" id="vendorModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Penyedia Baru</h3><button class="modal-close" id="vendorModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nama Penyedia</label><input type="text" id="newVendorNama" placeholder="mis. CV Sumber Jaya" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="vendorCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="vendorSaveBtn">Simpan Penyedia</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tambah Rekening cepat -->
+<div class="modal-scrim" id="accountModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Rekening Baru</h3><button class="modal-close" id="accountModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Kode Rekening</label><input type="text" id="newAccKode" placeholder="mis. 5.1.02.01" /></div>
+      <div class="field"><label>Uraian</label><input type="text" id="newAccUraian" placeholder="mis. Belanja ATK" /></div>
+      <div class="field"><label>Jenis Belanja</label><input type="text" id="newAccJenis" placeholder="mis. Belanja Barang dan Jasa" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="accountCancelBtn">Batal</button>
+      <button class="btn btn-primary btn-sm" id="accountSaveBtn">Simpan Rekening</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Konfirmasi tindakan (hapus / setujui / tolak) -->
+<div class="modal-scrim" id="confirmModal">
+  <div class="modal-box confirm-box">
+    <div class="modal-body" style="padding-top:24px;">
+      <div class="confirm-icon" id="confirmIcon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div>
+      <h3 style="font-size:15px;margin-bottom:8px;" id="confirmTitle">Konfirmasi</h3>
+      <p style="font-size:13.5px;color:var(--text-2);" id="confirmText"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" id="confirmCancelBtn">Batal</button>
+      <button class="btn btn-danger btn-sm" id="confirmActionBtn">Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script>
-  (async () => {
-    const profile = await window.SIMPELBMD_UI.bootstrapPage();
-    if (!profile) return;
-    document.getElementById("ctxYear").textContent = localStorage.getItem("simpelbmd_ta") || "2026";
-    document.getElementById("ctxStage").value = localStorage.getItem("simpelbmd_tahapan") || "murni";
-  })();
-</script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/realisasi.js"></script>
 </body>
 </html>
