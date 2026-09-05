@@ -390,7 +390,8 @@ create index idx_audit_logs_table on audit_logs(table_name, record_id);
 -- ==========================================================================
 -- 10. VIEWS UNTUK PERHITUNGAN — satu sumber kebenaran (Bab 21)
 -- ==========================================================================
-create or replace view v_dpa_pagu as
+create or replace view v_dpa_pagu
+with (security_invoker = on) as
 select
   d.fiscal_year, d.stage, dd.account_id,
   sum(dd.jumlah) as pagu
@@ -399,7 +400,8 @@ join dpa_details dd on dd.dpa_id = d.id and dd.deleted_at is null
 where d.deleted_at is null and d.is_active = true
 group by d.fiscal_year, d.stage, dd.account_id;
 
-create or replace view v_realisasi_per_rekening as
+create or replace view v_realisasi_per_rekening
+with (security_invoker = on) as
 select
   fiscal_year, stage, account_id,
   sum(nilai) filter (where status = 'disetujui') as total_realisasi
@@ -407,7 +409,8 @@ from realization
 where deleted_at is null
 group by fiscal_year, stage, account_id;
 
-create or replace view v_anggaran_vs_realisasi as
+create or replace view v_anggaran_vs_realisasi
+with (security_invoker = on) as
 select
   p.fiscal_year, p.stage, p.account_id, a.kode, a.uraian,
   p.pagu,
@@ -419,7 +422,8 @@ left join v_realisasi_per_rekening r
   on r.fiscal_year = p.fiscal_year and r.stage = p.stage and r.account_id = p.account_id
 join accounts a on a.id = p.account_id;
 
-create or replace view v_anggaran_kas_vs_realisasi as
+create or replace view v_anggaran_kas_vs_realisasi
+with (security_invoker = on) as
 select
   bc.fiscal_year, bc.stage, bc.bulan, bc.account_id,
   bc.nilai as anggaran_kas,
@@ -430,7 +434,8 @@ left join realization r
 where bc.deleted_at is null
 group by bc.fiscal_year, bc.stage, bc.bulan, bc.account_id, bc.nilai;
 
-create or replace view v_bbm_per_kendaraan as
+create or replace view v_bbm_per_kendaraan
+with (security_invoker = on) as
 select
   vehicle_id,
   sum(volume) filter (where status in ('digunakan','direalisasikan')) as total_volume,
@@ -440,7 +445,8 @@ from fuel_coupons
 where deleted_at is null
 group by vehicle_id;
 
-create or replace view v_pemeliharaan_per_kendaraan as
+create or replace view v_pemeliharaan_per_kendaraan
+with (security_invoker = on) as
 select vehicle_id, count(*) as jumlah_transaksi, sum(total) as total_biaya
 from maintenance_vehicle
 where deleted_at is null
