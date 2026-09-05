@@ -5,8 +5,8 @@
    sudah diaktifkan pada semua tabel (lihat supabase_schema.sql).
    ========================================================================== */
 
-const SUPABASE_URL = https://srbodvzjspkozdgpmlby.supabase.co;
-const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyYm9kdnpqc3Brb3pkZ3BtbGJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDkxNzYsImV4cCI6MjEwNDEyNTE3Nn0.ytze246lI0mIezYDBKAszXmc0D11QG580zQfgCXsQ0Y;
+const SUPABASE_URL = "https://srbodvzjspkozdgpmlby.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyYm9kdnpqc3Brb3pkZ3BtbGJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDkxNzYsImV4cCI6MjEwNDEyNTE3Nn0.ytze246lI0mIezYDBKAszXmc0D11QG580zQfgCXsQ0Y";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
