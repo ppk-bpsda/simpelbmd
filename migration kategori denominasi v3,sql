@@ -1,0 +1,119 @@
+-- ==========================================================================
+-- SIMPELBMD -- Migrasi v3: Sub-kategori Sepeda Motor & Kupon BBM Denominasi
+-- PENGGANTI migration_kategori_denominasi_v2.sql (v2 gagal & ter-rollback
+-- total karena urutan langkah salah: constraint baru dipasang SEBELUM data
+-- lama dibersihkan). Jalankan SEKALI, boleh dijalankan ulang bila sebelumnya
+-- gagal di tengah jalan (semua langkah idempotent).
+--
+-- PERBAIKAN dari v2:
+--   1. Pembersihan data (UPDATE) dilakukan DULU, baru constraint dipasang.
+--   2. Pembersihan 'Sepeda Motor' generik di vehicle_category_rates
+--      digeneralisasi ke SEMUA tahun fiskal (v2 cuma bersihkan 2026), lalu
+--      dipecah jadi 2 baris (Matic & Bebek/Manual) dengan tarif yang sama
+--      seperti aslinya -- data tidak hilang, tapi SILAKAN dikoreksi manual
+--      lewat halaman Tarif bila tarif historis tahun tsb sebenarnya beda.
+--   3. Kendaraan generik 'Sepeda Motor' yang tidak cocok pola merk di-set
+--      kategori = NULL (bukan dibiarkan bernilai teks yang sudah tidak
+--      valid) -- constraint mengizinkan NULL, admin lengkapi manual lewat
+--      Master Kendaraan.
+--
+-- Disarankan jalankan cek_data_lama_v3.sql dulu untuk melihat baris mana
+-- yang akan terdampak butir 2 & 3 di atas.
+-- ==========================================================================
+
+-- ---------- LANGKAH A: bersihkan data lama DULU, sebelum constraint ----------
+
+-- A1. Kendaraan: migrasi berdasarkan pola merk (sama seperti v2)
+update vehicles set kategori = 'Sepeda Motor Matic'
+  where kategori = 'Sepeda Motor' and (merk ilike '%aerox%' or merk ilike '%freego%' or tipe ilike '%aerox%' or tipe ilike '%freego%');
+update vehicles set kategori = 'Sepeda Motor Bebek/Manual'
+  where kategori = 'Sepeda Motor' and (merk ilike '%supra%' or merk ilike '%vega%' or tipe ilike '%supra%' or tipe ilike '%vega%');
+
+-- A2. Sisa kendaraan generik 'Sepeda Motor' (tidak cocok pola merk di atas)
+--     di-set NULL, BUKAN dibiarkan sebagai teks 'Sepeda Motor' yang sudah
+--     tidak valid -- constraint baru mengizinkan NULL. Tentukan manual
+--     lewat Master Kendaraan setelah migrasi ini selesai.
+update vehicles set kategori = null
+  where kategori = 'Sepeda Motor';
+
+-- A3. vehicle_category_rates: pecah SEMUA baris 'Sepeda Motor' generik
+--     (semua tahun fiskal, bukan cuma 2026) jadi 2 baris baru dengan tarif
+--     yang sama seperti aslinya, lalu hapus baris generiknya.
+insert into vehicle_category_rates (fiscal_year, kategori, tarif_bulanan, account_id)
+select fiscal_year, 'Sepeda Motor Matic', tarif_bulanan, account_id
+from vehicle_category_rates r
+where kategori = 'Sepeda Motor'
+  and not exists (
+    select 1 from vehicle_category_rates r2
+    where r2.fiscal_year = r.fiscal_year and r2.kategori = 'Sepeda Motor Matic'
+  );
+
+insert into vehicle_category_rates (fiscal_year, kategori, tarif_bulanan, account_id)
+select fiscal_year, 'Sepeda Motor Bebek/Manual', tarif_bulanan, account_id
+from vehicle_category_rates r
+where kategori = 'Sepeda Motor'
+  and not exists (
+    select 1 from vehicle_category_rates r2
+    where r2.fiscal_year = r.fiscal_year and r2.kategori = 'Sepeda Motor Bebek/Manual'
+  );
+
+delete from vehicle_category_rates where kategori = 'Sepeda Motor';
+
+-- ---------- LANGKAH B: baru sekarang aman pasang constraint baru ----------
+
+alter table vehicles drop constraint if exists vehicles_kategori_check;
+alter table vehicles add constraint vehicles_kategori_check
+  check (kategori in (
+    'Sepeda Motor Matic', 'Sepeda Motor Bebek/Manual',
+    'Mobil Dinas Perorangan', 'Mobil Dinas Penumpang'
+  ) or kategori is null);
+
+alter table vehicle_category_rates drop constraint if exists vehicle_category_rates_kategori_check;
+alter table vehicle_category_rates add constraint vehicle_category_rates_kategori_check
+  check (kategori in (
+    'Sepeda Motor Matic', 'Sepeda Motor Bebek/Manual',
+    'Mobil Dinas Perorangan', 'Mobil Dinas Penumpang'
+  ));
+
+-- ---------- LANGKAH C: pastikan tarif TA 2026 sesuai klarifikasi terbaru ----------
+
+update vehicle_category_rates
+  set tarif_bulanan = 200000
+  where fiscal_year = 2026 and kategori = 'Sepeda Motor Matic';
+
+insert into vehicle_category_rates (fiscal_year, kategori, tarif_bulanan, account_id)
+select 2026, 'Sepeda Motor Matic', 200000,
+  (select id from accounts where kode = '5.1.02.03.002.00038')
+where not exists (select 1 from vehicle_category_rates where fiscal_year = 2026 and kategori = 'Sepeda Motor Matic');
+
+update vehicle_category_rates
+  set tarif_bulanan = 100000
+  where fiscal_year = 2026 and kategori = 'Sepeda Motor Bebek/Manual';
+
+insert into vehicle_category_rates (fiscal_year, kategori, tarif_bulanan, account_id)
+select 2026, 'Sepeda Motor Bebek/Manual', 100000,
+  (select id from accounts where kode = '5.1.02.03.002.00038')
+where not exists (select 1 from vehicle_category_rates where fiscal_year = 2026 and kategori = 'Sepeda Motor Bebek/Manual');
+
+-- Kategori mobil TA 2026 (jaga-jaga bila belum ada, tidak menimpa yang sudah benar)
+insert into vehicle_category_rates (fiscal_year, kategori, tarif_bulanan, account_id)
+select 2026, 'Mobil Dinas Perorangan', 1500000,
+  (select id from accounts where kode = '5.1.02.03.002.00035')
+where not exists (select 1 from vehicle_category_rates where fiscal_year = 2026 and kategori = 'Mobil Dinas Perorangan');
+
+insert into vehicle_category_rates (fiscal_year, kategori, tarif_bulanan, account_id)
+select 2026, 'Mobil Dinas Penumpang', 500000,
+  (select id from accounts where kode = '5.1.02.03.002.00035')
+where not exists (select 1 from vehicle_category_rates where fiscal_year = 2026 and kategori = 'Mobil Dinas Penumpang');
+
+-- ---------- LANGKAH D: kupon BBM -- volume opsional + kolom pecahan ----------
+
+alter table fuel_coupons alter column volume drop not null;
+alter table fuel_coupons add column if not exists lembar_100000 int not null default 0;
+alter table fuel_coupons add column if not exists lembar_25000 int not null default 0;
+alter table fuel_coupons drop constraint if exists fuel_coupons_lembar_nonneg;
+alter table fuel_coupons add constraint fuel_coupons_lembar_nonneg
+  check (lembar_100000 >= 0 and lembar_25000 >= 0);
+
+-- Selesai. Setelah ini jalankan `import_kendaraan_BPSDA_v2.sql` seperti biasa
+-- untuk mengoreksi 10 kendaraan BPSDA sesuai KIB.
