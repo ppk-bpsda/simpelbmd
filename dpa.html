@@ -184,30 +184,6 @@
   </div>
 </div>
 
-<!-- Modal: Import Rincian Excel -->
-<div class="modal-scrim" id="importModal">
-  <div class="modal-box">
-    <div class="modal-head">
-      <div><h3>Import Rincian dari Excel</h3><div class="m-sub">Kolom: kode_rekening, satuan, volume, harga_satuan</div></div>
-      <button class="modal-close" id="importModalClose">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="field"><label>Pilih DPA Tujuan</label><select id="importDpaSelect"></select></div>
-      <div class="field"><label>File Excel (.xlsx)</label><input type="file" id="importFile" accept=".xlsx,.xls" /></div>
-      <div id="importPreviewWrap" style="display:none;">
-        <div class="alert alert-info" id="importSummary"></div>
-        <div class="table-scroll" style="max-height:280px;overflow-y:auto;">
-          <table class="data-table" id="importPreviewTable"></table>
-        </div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost btn-sm" id="importCancelBtn">Batal</button>
-      <button class="btn btn-primary btn-sm" id="importConfirmBtn" disabled>Konfirmasi Import</button>
-    </div>
-  </div>
-</div>
-
 <!-- Modal: Konfirmasi Hapus -->
 <div class="modal-scrim" id="deleteModal">
   <div class="modal-box confirm-box">
@@ -228,6 +204,7 @@
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/smart-import.js"></script>
 <script src="assets/js/dpa.js"></script>
 </body>
 </html>

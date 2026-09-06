@@ -1,7 +1,29 @@
 # SIMPELBMD
 Sistem Manajemen Pemeliharaan & Barang Milik Daerah — static site (HTML/CSS/JS) + Supabase (Auth + Postgres).
 
-Status: **Seluruh 8 modul utama sudah berfungsi penuh** — Login, Dashboard, DPA, Realisasi, Anggaran Kas, Pengadaan (BMD + BBM), Distribusi BBM (kendaraan + kupon), Pemeliharaan (kendaraan + peralatan), Master Data, dan Laporan. Semua CRUD, validasi, dan perhitungan terhubung langsung ke Supabase. Hanya **Pengaturan Akun** (kelola pengguna) yang masih berupa halaman "dalam pengembangan".
+Status: **Seluruh 9 modul sudah berfungsi penuh**, termasuk Pengaturan Akun (profil, ubah password, manajemen pengguna). Dashboard sekarang **terhubung penuh ke data asli** — bukan angka contoh — sehingga otomatis tampil kosong (Rp 0, "Belum ada data") sampai Anda mulai menginput data sungguhan. Tampilan aplikasi juga sudah diperkaya dengan animasi masuk, hover interaktif, dan transisi halus di seluruh halaman.
+
+### Yang sudah bisa dipakai di modul Pengaturan Akun
+- **Profil Saya** (semua pengguna): ubah nama lengkap, ubah password sendiri (wajib konfirmasi password lama).
+- **Manajemen Pengguna** (khusus Administrator): tambah pengguna baru (username + password awal + role), edit nama/role, aktifkan/nonaktifkan akun. Admin tidak bisa menonaktifkan akunnya sendiri.
+- **Catatan teknis**: karena aplikasi ini murni statis (tanpa server sendiri), pembuatan pengguna baru dilakukan lewat mekanisme *sign-up* Supabase yang dijalankan di koneksi terpisah agar sesi login Admin tidak ikut terganti. Reset password oleh Admin untuk pengguna lain (tanpa pengguna itu login sendiri) memerlukan Supabase Service Role Key di sisi server dan **belum tersedia** di versi statis ini — pengguna yang lupa password perlu dibuatkan ulang akunnya oleh Admin, atau ubah sendiri lewat Profil Saya selama masih bisa login.
+
+### Dashboard sekarang berbasis data asli
+Sebelumnya Dashboard menampilkan angka contoh untuk keperluan desain. Sekarang seluruh KPI, grafik, notifikasi, dan tabel transaksi terbaru diambil langsung dari Supabase:
+- Pagu/Realisasi/Sisa dihitung dari data DPA & Realisasi yang benar-benar ada.
+- Grafik dan tabel menampilkan **empty state** yang ramah (bukan grafik kosong membingungkan) selama belum ada data, lengkap dengan tombol pintas ke modul terkait untuk mulai mengisi.
+- Notifikasi dibangun otomatis dari kondisi nyata (realisasi mendekati/melebihi pagu, kupon BBM belum direalisasikan, transaksi masih Draft) — bukan contoh statis.
+- Angka KPI tampil dengan animasi hitung naik saat halaman dimuat.
+
+### Reset data (kembali ke kondisi baru)
+Jalankan `reset_data.sql` di Supabase SQL Editor untuk menghapus seluruh data transaksi/master yang pernah diinput (DPA, pengadaan, realisasi, kendaraan, peralatan, kupon BBM, pemeliharaan, rekening, penyedia, audit log) **tanpa menghapus akun login Anda**. Setelah dijalankan, Dashboard dan semua modul akan otomatis tampil kosong seperti aplikasi baru. Lihat komentar di dalam file untuk detail lengkap.
+
+### Tampilan lebih modern, animatif, dan interaktif
+- Animasi masuk (fade + slide) bertahap pada kartu KPI, panel, dan tabel setiap halaman dimuat.
+- Efek hover "mengangkat" pada kartu dan panel, tombol dengan micro-interaction (tekan mengecil, hover naik + glow).
+- Modal muncul dengan animasi pop-in halus, bukan muncul instan.
+- Progress bar animasi mengisi, angka KPI animasi hitung naik.
+- Background halaman memiliki gradien lembut yang bergerak perlahan (otomatis nonaktif jika perangkat pengguna mengaktifkan "reduce motion").
 
 ### Yang sudah bisa dipakai di modul DPA
 - Tambah/edit DPA dengan rincian rekening dinamis (baris bisa ditambah/dihapus), Jumlah dihitung otomatis (Volume × Harga Satuan), Total Pagu otomatis.
@@ -54,6 +76,18 @@ Status: **Seluruh 8 modul utama sudah berfungsi penuh** — Login, Dashboard, DP
 - **Pemeliharaan Kendaraan**: filter rentang tanggal, Total otomatis.
 - **BBM**: rekap bulanan dan rekap per kendaraan.
 - Semua laporan punya tombol **Cetak/PDF** (memakai print dialog browser, sidebar & tombol otomatis disembunyikan saat cetak) dan **Export Excel**.
+
+## Smart Import — unggah Excel/CSV dengan deteksi kolom otomatis
+
+Fitur ini tersedia di beberapa titik: **DPA** (tombol "Import Rincian"), **Master Data → Rekening & Penyedia**, **Distribusi BBM → Master Kendaraan**, dan **Pemeliharaan → Kelola Master Peralatan** (tombol "Import Excel" di masing-masing).
+
+Cara kerjanya:
+1. **Unggah** file `.xlsx` atau `.csv` apa pun — nama kolom di file Anda tidak perlu persis sama dengan field aplikasi (mis. "Kode Rek", "Kode Rekening", atau "Account Code" semuanya akan dikenali sebagai kolom Kode Rekening).
+2. **Pemetaan kolom** ditampilkan untuk diperiksa/diubah manual bila deteksi otomatis kurang tepat.
+3. **Preview & validasi** — setiap baris ditandai Valid atau Error (mis. rekening tidak ditemukan, kolom wajib kosong) sebelum benar-benar disimpan.
+4. Hanya baris **Valid** yang diimpor; baris bermasalah dilewati dan bisa diperbaiki lalu diunggah ulang.
+
+Mesin ini generik (`assets/js/smart-import.js`) sehingga mudah dipasang di modul lain di kemudian hari — cukup panggil `SmartImport.open({...})` dengan daftar field yang dibutuhkan.
 
 ## Struktur folder
 ```
@@ -132,8 +166,8 @@ Karena ini situs statis murni (tanpa build step), tidak ada environment variable
 | 9 | Pemeliharaan kendaraan & peralatan | ✅ Selesai |
 | 10 | Laporan (preview, cetak, PDF, Excel) | ✅ Selesai |
 | 11 | Master Data (rekening, penyedia, jenis BBM, satuan) | ✅ Selesai |
-| 12 | Pengaturan Akun (kelola pengguna, ubah password, role) | ⏳ Berikutnya |
-| 13 | Notifikasi realtime, global search lintas modul | ⏳ |
+| 12 | Pengaturan Akun (kelola pengguna, ubah password, role) | ✅ Selesai |
+| 13 | Notifikasi realtime, global search lintas modul | ⏳ Berikutnya |
 | 14 | Testing menyeluruh (fungsional, validasi, role, responsif, keamanan) | ⏳ |
 
-Modul inti sudah lengkap dan bisa dipakai untuk operasional harian. Yang tersisa: **Pengaturan Akun** (agar Admin bisa menambah/menonaktifkan pengguna dan mengatur role langsung dari aplikasi, bukan lewat Supabase Dashboard), notifikasi dashboard yang benar-benar dinamis (saat ini masih contoh statis), dan pengujian menyeluruh sebelum dipakai produksi penuh. Beri tahu mana yang ingin dilanjutkan.
+Modul inti sudah lengkap dan bisa dipakai untuk operasional harian. Yang tersisa: global search lintas modul (Bab 43 — saat ini pencarian masih per-modul), dan pengujian menyeluruh sebelum dipakai produksi penuh. Beri tahu mana yang ingin dilanjutkan.

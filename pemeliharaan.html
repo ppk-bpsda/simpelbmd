@@ -243,7 +243,8 @@
         <div class="field"><label>Tahun</label><input type="number" id="fEqTahun" min="1980" max="2100" /></div>
       </div>
       <div class="field"><label>Kondisi</label><input type="text" id="fEqKondisi" placeholder="Baik / Rusak Ringan / Rusak Berat" /></div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">
+        <button class="btn btn-ghost btn-sm" id="eqImportBtn">Import Excel</button>
         <button class="btn btn-primary btn-sm" id="eqAddBtn">+ Tambah Peralatan</button>
       </div>
       <div class="table-scroll" style="max-height:280px;overflow-y:auto;">
@@ -294,6 +295,7 @@
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/smart-import.js"></script>
 <script src="assets/js/pemeliharaan.js"></script>
 </body>
 </html>

@@ -74,7 +74,10 @@
           <div class="toolbar-left">
             <div class="search-box" style="width:240px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="rekSearch" placeholder="Cari kode / uraian…" /></div>
           </div>
-          <div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddRek">+ Tambah Rekening</button></div>
+          <div class="toolbar-right">
+            <button class="btn btn-ghost btn-sm" id="btnImportRek">Import Excel</button>
+            <button class="btn btn-primary btn-sm" id="btnAddRek">+ Tambah Rekening</button>
+          </div>
         </div>
         <div class="table-panel"><div class="table-scroll">
           <table class="data-table"><thead><tr><th>Kode</th><th>Uraian</th><th>Jenis Belanja</th><th>Status</th><th>Aksi</th></tr></thead>
@@ -88,7 +91,10 @@
           <div class="toolbar-left">
             <div class="search-box" style="width:240px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="venSearch" placeholder="Cari nama penyedia…" /></div>
           </div>
-          <div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddVen">+ Tambah Penyedia</button></div>
+          <div class="toolbar-right">
+            <button class="btn btn-ghost btn-sm" id="btnImportVen">Import Excel</button>
+            <button class="btn btn-primary btn-sm" id="btnAddVen">+ Tambah Penyedia</button>
+          </div>
         </div>
         <div class="table-panel"><div class="table-scroll">
           <table class="data-table"><thead><tr><th>Nama</th><th>NPWP</th><th>Kontak</th><th>Alamat</th><th>Aksi</th></tr></thead>
@@ -181,9 +187,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/smart-import.js"></script>
 <script src="assets/js/master-data.js"></script>
 </body>
 </html>

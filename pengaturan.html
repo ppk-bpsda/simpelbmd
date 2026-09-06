@@ -52,17 +52,6 @@
         </div>
       </div>
       <div class="topbar-right">
-        <div class="context-pill">
-          <span>TA <strong id="ctxYear">2026</strong></span>
-          <select id="ctxStage">
-            <option value="murni">Murni</option>
-            <option value="perubahan">Perubahan</option>
-          </select>
-        </div>
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" placeholder="Cari…" />
-        </div>
         <div class="user-chip" id="userChip"></div>
         <button class="icon-btn" id="logoutBtn" title="Keluar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -71,36 +60,98 @@
     </header>
 
     <div class="content">
-      <div class="wip-panel">
-        <div class="w-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4Z"/></svg>
-        </div>
-        <h3>Pengaturan — dalam pengembangan tahap berikutnya</h3>
-        <p>Kelola profil akun (ubah password) untuk semua pengguna. Administrator dapat menambah pengguna, mengatur peran (role), dan menonaktifkan akun.</p>
-        <div class="wip-fields">
-          <span>Profil Saya</span>
-          <span>Manajemen Pengguna</span>
-          <span>Role & Hak Akses</span>
-          <span>Riwayat Aktivitas</span>
-        </div>
-        <div style="margin-top:26px;">
-          <a href="dashboard.html" class="btn btn-ghost btn-sm">← Kembali ke Dashboard</a>
+
+      <div class="chip-tabs" style="width:fit-content;margin-bottom:18px;">
+        <button class="active" data-tab="profil">Profil Saya</button>
+        <button data-tab="pengguna" data-role="admin-only">Manajemen Pengguna</button>
+      </div>
+
+      <!-- ============ PROFIL SAYA ============ -->
+      <div class="set-tab" id="tab-profil">
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Informasi Akun</h3><div class="panel-sub">Identitas login Anda</div></div></div>
+            <div class="form-grid">
+              <div class="field"><label>Username</label><input type="text" id="profUsername" disabled /></div>
+              <div class="field"><label>Role</label><input type="text" id="profRole" disabled /></div>
+            </div>
+            <div class="field"><label>Nama Lengkap</label><input type="text" id="profFullName" /></div>
+            <div class="form-error" id="profFormError"></div>
+            <button class="btn btn-primary btn-sm" id="profSaveBtn">Simpan Nama</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><div><h3>Ubah Password</h3><div class="panel-sub">Masukkan password lama untuk konfirmasi</div></div></div>
+            <div class="form-error" id="pwFormError"></div>
+            <div class="field"><label>Password Saat Ini</label><input type="password" id="pwCurrent" /></div>
+            <div class="field"><label>Password Baru</label><input type="password" id="pwNew" placeholder="Minimal 6 karakter" /></div>
+            <div class="field"><label>Ulangi Password Baru</label><input type="password" id="pwConfirm" /></div>
+            <button class="btn btn-primary btn-sm" id="pwSaveBtn">Ubah Password</button>
+          </div>
         </div>
       </div>
+
+      <!-- ============ MANAJEMEN PENGGUNA (ADMIN) ============ -->
+      <div class="set-tab" id="tab-pengguna" style="display:none;" data-role="admin-only">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box" style="width:240px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="userSearch" placeholder="Cari username / nama…" /></div>
+          </div>
+          <div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddUser">+ Tambah Pengguna</button></div>
+        </div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Username</th><th>Nama Lengkap</th><th>Role</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div></div>
+      </div>
+
     </div>
   </main>
+</div>
+
+<!-- Modal: Tambah Pengguna -->
+<div class="modal-scrim" id="userModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Pengguna</h3><button class="modal-close" id="userModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-error" id="userFormError"></div>
+      <div class="field"><label>Username</label><input type="text" id="fUserUsername" placeholder="tanpa spasi, huruf kecil" /></div>
+      <div class="field"><label>Nama Lengkap</label><input type="text" id="fUserFullName" /></div>
+      <div class="field"><label>Password Awal</label><input type="password" id="fUserPassword" placeholder="Minimal 6 karakter" /></div>
+      <div class="field">
+        <label>Role</label>
+        <select id="fUserRole"><option value="operator">Operator</option><option value="admin">Administrator</option></select>
+      </div>
+      <div class="hint">Sampaikan username dan password awal ini secara langsung kepada pengguna. Mereka dapat menggantinya sendiri lewat menu Profil Saya.</div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="userCancelBtn">Batal</button><button class="btn btn-primary btn-sm" id="userSaveBtn">Buat Pengguna</button></div>
+  </div>
+</div>
+
+<!-- Modal: Edit Pengguna -->
+<div class="modal-scrim" id="userEditModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Edit Pengguna</h3><button class="modal-close" id="userEditModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-error" id="userEditFormError"></div>
+      <div class="field"><label>Username</label><input type="text" id="fUserEditUsername" disabled /></div>
+      <div class="field"><label>Nama Lengkap</label><input type="text" id="fUserEditFullName" /></div>
+      <div class="field">
+        <label>Role</label>
+        <select id="fUserEditRole"><option value="operator">Operator</option><option value="admin">Administrator</option></select>
+      </div>
+      <label class="check-row"><input type="checkbox" id="fUserEditActive" /> Akun aktif (bisa login)</label>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="userEditCancelBtn">Batal</button><button class="btn btn-primary btn-sm" id="userEditSaveBtn">Simpan Perubahan</button></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script>
-  (async () => {
-    const profile = await window.SIMPELBMD_UI.bootstrapPage();
-    if (!profile) return;
-    document.getElementById("ctxYear").textContent = localStorage.getItem("simpelbmd_ta") || "2026";
-    document.getElementById("ctxStage").value = localStorage.getItem("simpelbmd_tahapan") || "murni";
-  })();
-</script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/pengaturan.js"></script>
 </body>
 </html>
