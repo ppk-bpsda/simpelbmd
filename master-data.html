@@ -48,21 +48,10 @@
         </button>
         <div>
           <div class="page-title">Master Data</div>
-          <div class="page-crumb">Organisasi, rekening, kendaraan, peralatan & penyedia</div>
+          <div class="page-crumb">Rekening, penyedia, jenis BBM &amp; satuan (khusus Administrator)</div>
         </div>
       </div>
       <div class="topbar-right">
-        <div class="context-pill">
-          <span>TA <strong id="ctxYear">2026</strong></span>
-          <select id="ctxStage">
-            <option value="murni">Murni</option>
-            <option value="perubahan">Perubahan</option>
-          </select>
-        </div>
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" placeholder="Cari…" />
-        </div>
         <div class="user-chip" id="userChip"></div>
         <button class="icon-btn" id="logoutBtn" title="Keluar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -71,37 +60,130 @@
     </header>
 
     <div class="content">
-      <div class="wip-panel">
-        <div class="w-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4Z"/></svg>
-        </div>
-        <h3>Master Data — dalam pengembangan tahap berikutnya</h3>
-        <p>Kelola data referensi: struktur organisasi (Urusan/Program/Kegiatan/Sub Kegiatan), rekening belanja, kendaraan, peralatan, penyedia, jenis BBM dan satuan. Hanya dapat diakses Administrator.</p>
-        <div class="wip-fields">
-          <span>Master Organisasi</span>
-          <span>Master Rekening</span>
-          <span>Master Kendaraan</span>
-          <span>Master Peralatan</span>
-          <span>Master Penyedia</span>
-        </div>
-        <div style="margin-top:26px;">
-          <a href="dashboard.html" class="btn btn-ghost btn-sm">← Kembali ke Dashboard</a>
-        </div>
+
+      <div class="chip-tabs" style="width:fit-content;margin-bottom:18px;">
+        <button class="active" data-tab="rekening">Master Rekening</button>
+        <button data-tab="penyedia">Master Penyedia</button>
+        <button data-tab="bbm">Jenis BBM</button>
+        <button data-tab="satuan">Satuan</button>
       </div>
+
+      <!-- ============ REKENING ============ -->
+      <div class="md-tab" id="tab-rekening">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box" style="width:240px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="rekSearch" placeholder="Cari kode / uraian…" /></div>
+          </div>
+          <div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddRek">+ Tambah Rekening</button></div>
+        </div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table"><thead><tr><th>Kode</th><th>Uraian</th><th>Jenis Belanja</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="rekTableBody"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- ============ PENYEDIA ============ -->
+      <div class="md-tab" id="tab-penyedia" style="display:none;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box" style="width:240px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="venSearch" placeholder="Cari nama penyedia…" /></div>
+          </div>
+          <div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddVen">+ Tambah Penyedia</button></div>
+        </div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table"><thead><tr><th>Nama</th><th>NPWP</th><th>Kontak</th><th>Alamat</th><th>Aksi</th></tr></thead>
+          <tbody id="venTableBody"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- ============ JENIS BBM ============ -->
+      <div class="md-tab" id="tab-bbm" style="display:none;">
+        <div class="toolbar"><div class="toolbar-left"></div><div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddFuel">+ Tambah Jenis BBM</button></div></div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table"><thead><tr><th>Nama</th><th>Satuan</th></tr></thead>
+          <tbody id="fuelTableBody"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- ============ SATUAN ============ -->
+      <div class="md-tab" id="tab-satuan" style="display:none;">
+        <div class="toolbar"><div class="toolbar-left"></div><div class="toolbar-right"><button class="btn btn-primary btn-sm" id="btnAddUnit">+ Tambah Satuan</button></div></div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table"><thead><tr><th>Nama Satuan</th></tr></thead>
+          <tbody id="unitTableBody"></tbody></table>
+        </div></div>
+      </div>
+
     </div>
   </main>
+</div>
+
+<!-- Modal generik untuk tambah/edit master rekening -->
+<div class="modal-scrim" id="rekModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3 id="rekModalTitle">Tambah Rekening</h3><button class="modal-close" id="rekModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-error" id="rekFormError"></div>
+      <div class="field"><label>Kode Rekening</label><input type="text" id="fRekKode" /></div>
+      <div class="field"><label>Uraian</label><input type="text" id="fRekUraian" /></div>
+      <div class="field"><label>Jenis Belanja</label><input type="text" id="fRekJenis" /></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="rekCancelBtn">Batal</button><button class="btn btn-primary btn-sm" id="rekSaveBtn">Simpan</button></div>
+  </div>
+</div>
+
+<div class="modal-scrim" id="venModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3 id="venModalTitle">Tambah Penyedia</h3><button class="modal-close" id="venModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-error" id="venFormError"></div>
+      <div class="field"><label>Nama Penyedia</label><input type="text" id="fVenNama" /></div>
+      <div class="field"><label>NPWP</label><input type="text" id="fVenNpwp" /></div>
+      <div class="field"><label>Kontak</label><input type="text" id="fVenKontak" /></div>
+      <div class="field"><label>Alamat</label><textarea id="fVenAlamat"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="venCancelBtn">Batal</button><button class="btn btn-primary btn-sm" id="venSaveBtn">Simpan</button></div>
+  </div>
+</div>
+
+<div class="modal-scrim" id="fuelModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Jenis BBM</h3><button class="modal-close" id="fuelModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-error" id="fuelFormError"></div>
+      <div class="field"><label>Nama Jenis BBM</label><input type="text" id="fFuelNama" placeholder="mis. Pertamax Turbo" /></div>
+      <div class="field"><label>Satuan</label><input type="text" id="fFuelSatuan" value="liter" /></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="fuelCancelBtn">Batal</button><button class="btn btn-primary btn-sm" id="fuelSaveBtn">Simpan</button></div>
+  </div>
+</div>
+
+<div class="modal-scrim" id="unitModal">
+  <div class="modal-box modal-sm">
+    <div class="modal-head"><h3>Tambah Satuan</h3><button class="modal-close" id="unitModalClose">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-error" id="unitFormError"></div>
+      <div class="field"><label>Nama Satuan</label><input type="text" id="fUnitNama" placeholder="mis. Rol" /></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="unitCancelBtn">Batal</button><button class="btn btn-primary btn-sm" id="unitSaveBtn">Simpan</button></div>
+  </div>
+</div>
+
+<div class="modal-scrim" id="deleteModal">
+  <div class="modal-box confirm-box">
+    <div class="modal-body" style="padding-top:24px;">
+      <div class="confirm-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div>
+      <h3 style="font-size:15px;margin-bottom:8px;">Nonaktifkan data ini?</h3>
+      <p style="font-size:13.5px;color:var(--text-2);" id="deleteConfirmText"></p>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-sm" id="deleteCancelBtn">Batal</button><button class="btn btn-danger btn-sm" id="deleteConfirmBtn">Ya, Nonaktifkan</button></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script>
-  (async () => {
-    const profile = await window.SIMPELBMD_UI.bootstrapPage();
-    if (!profile) return;
-    document.getElementById("ctxYear").textContent = localStorage.getItem("simpelbmd_ta") || "2026";
-    document.getElementById("ctxStage").value = localStorage.getItem("simpelbmd_tahapan") || "murni";
-  })();
-</script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/master-data.js"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 # SIMPELBMD
 Sistem Manajemen Pemeliharaan & Barang Milik Daerah — static site (HTML/CSS/JS) + Supabase (Auth + Postgres).
 
-Status: Login, shell aplikasi, dashboard, serta **modul DPA, Realisasi, Anggaran Kas, dan Pengadaan (BMD + Penyediaan BBM) sudah berfungsi penuh** (CRUD, validasi, terhubung Supabase). Modul BBM (kendaraan & kupon), Pemeliharaan, Laporan, dan Master Data masih berupa halaman "dalam pengembangan", menunggu giliran dibangun.
+Status: **Seluruh 8 modul utama sudah berfungsi penuh** — Login, Dashboard, DPA, Realisasi, Anggaran Kas, Pengadaan (BMD + BBM), Distribusi BBM (kendaraan + kupon), Pemeliharaan (kendaraan + peralatan), Master Data, dan Laporan. Semua CRUD, validasi, dan perhitungan terhubung langsung ke Supabase. Hanya **Pengaturan Akun** (kelola pengguna) yang masih berupa halaman "dalam pengembangan".
 
 ### Yang sudah bisa dipakai di modul DPA
 - Tambah/edit DPA dengan rincian rekening dinamis (baris bisa ditambah/dihapus), Jumlah dihitung otomatis (Volume × Harga Satuan), Total Pagu otomatis.
@@ -26,6 +26,8 @@ Status: Login, shell aplikasi, dashboard, serta **modul DPA, Realisasi, Anggaran
 **Tab Penyediaan BBM:**
 - Tambah/edit penyediaan BBM per jenis BBM, Nilai dihitung otomatis (Volume × Harga).
 - Terhubung ke rekening & penyedia yang sama dengan Master Data. Export Excel, soft delete.
+
+### Yang sudah bisa dipakai di modul Realisasi
 - Tambah/edit transaksi realisasi dengan nomor transaksi otomatis.
 - Saat memilih rekening & tanggal, sistem langsung menampilkan **Pagu DPA, Realisasi Sebelumnya, Sisa Pagu, dan Anggaran Kas bulan tersebut** — dihitung dari view database, bukan manual.
 - **Validasi blocking**: transaksi tidak bisa disimpan jika nilainya melebihi sisa pagu DPA rekening tersebut.
@@ -34,6 +36,24 @@ Status: Login, shell aplikasi, dashboard, serta **modul DPA, Realisasi, Anggaran
 - Hapus (soft delete) hanya untuk Admin dan hanya pada status Draft.
 - Filter status & rekening, pencarian, export Excel.
 - Setiap aksi (buat, ubah, setujui, tolak, hapus) tercatat ke `audit_logs`.
+
+### Yang sudah bisa dipakai di modul Distribusi BBM
+- **Master Kendaraan**: CRUD lengkap (nopol, merk, tipe, jenis BBM, unit pengguna, status kendaraan).
+- **Kupon BBM**: terbitkan kupon dengan alur status Dibuat → Didistribusikan → Digunakan → Direalisasikan (atau Dibatalkan). Validasi kilometer akhir tidak boleh lebih kecil dari kilometer awal maupun dari transaksi sebelumnya kendaraan yang sama. Soft delete, tidak pernah dihapus permanen.
+
+### Yang sudah bisa dipakai di modul Pemeliharaan
+- **Pemeliharaan Kendaraan**: jenis pemeliharaan terstandar (servis berkala, ganti oli, ban, rem, dst), Total dihitung otomatis (Volume × Harga + Jasa).
+- **Pemeliharaan Peralatan**: terhubung ke Master Peralatan yang bisa dikelola langsung dari halaman ini (tambah/edit/hapus tanpa pindah menu).
+- Riwayat per kendaraan/peralatan, filter, export Excel.
+
+### Yang sudah bisa dipakai di modul Master Data (khusus Administrator)
+- CRUD penuh untuk Rekening (nonaktifkan, bukan hapus permanen), Penyedia, Jenis BBM, dan Satuan.
+
+### Yang sudah bisa dipakai di modul Laporan
+- **Anggaran vs Realisasi**: per rekening, dengan baris Total otomatis.
+- **Pemeliharaan Kendaraan**: filter rentang tanggal, Total otomatis.
+- **BBM**: rekap bulanan dan rekap per kendaraan.
+- Semua laporan punya tombol **Cetak/PDF** (memakai print dialog browser, sidebar & tombol otomatis disembunyikan saat cetak) dan **Export Excel**.
 
 ## Struktur folder
 ```
@@ -98,21 +118,22 @@ vercel --prod
 
 Karena ini situs statis murni (tanpa build step), tidak ada environment variable server yang diperlukan — kredensial Supabase sudah tertanam di `supabase-client.js` sebagai anon key publik yang aman.
 
-## 4. Rencana pengembangan lanjutan (mengikuti Fase 3–13 dokumen Anda)
+## 4. Rencana pengembangan lanjutan
 
 | Fase | Modul | Status |
 |---|---|---|
 | 1–2 | Arsitektur, skema DB, desain UI dasar | ✅ Selesai |
 | 3 | Autentikasi & otorisasi (RBAC admin/operator) | ✅ Selesai |
-| 4 | Modul DPA (CRUD, import/export Excel) | ⏳ Berikutnya |
-| 5 | Modul Pengadaan (BMD & BBM) | ⏳ |
-| 6 | Anggaran Kas + grafik cash flow | ⏳ |
-| 7 | Realisasi + validasi pagu/anggaran kas | ⏳ |
-| 8 | Distribusi BBM (kendaraan, kupon) | ⏳ |
-| 9 | Pemeliharaan kendaraan & peralatan | ⏳ |
-| 10 | Laporan (preview, cetak, PDF, Excel) | ⏳ |
-| 11 | Master Data (organisasi, rekening, dll) | ⏳ |
-| 12 | Notifikasi, global search, audit trail UI | ⏳ |
-| 13 | Testing (fungsional, validasi, role, responsif) | ⏳ |
+| 4 | Modul DPA (CRUD, import/export Excel) | ✅ Selesai |
+| 5 | Modul Pengadaan (BMD & BBM) | ✅ Selesai |
+| 6 | Anggaran Kas + grafik cash flow | ✅ Selesai |
+| 7 | Realisasi + validasi pagu/anggaran kas | ✅ Selesai |
+| 8 | Distribusi BBM (kendaraan, kupon) | ✅ Selesai |
+| 9 | Pemeliharaan kendaraan & peralatan | ✅ Selesai |
+| 10 | Laporan (preview, cetak, PDF, Excel) | ✅ Selesai |
+| 11 | Master Data (rekening, penyedia, jenis BBM, satuan) | ✅ Selesai |
+| 12 | Pengaturan Akun (kelola pengguna, ubah password, role) | ⏳ Berikutnya |
+| 13 | Notifikasi realtime, global search lintas modul | ⏳ |
+| 14 | Testing menyeluruh (fungsional, validasi, role, responsif, keamanan) | ⏳ |
 
-Beri tahu modul mana yang ingin dibangun lebih dulu (mis. **DPA** atau **Realisasi**), dan saya lanjutkan dengan form input, tabel data (search/filter/sort/pagination), validasi, dan koneksi penuh ke Supabase untuk modul tersebut.
+Modul inti sudah lengkap dan bisa dipakai untuk operasional harian. Yang tersisa: **Pengaturan Akun** (agar Admin bisa menambah/menonaktifkan pengguna dan mengatur role langsung dari aplikasi, bukan lewat Supabase Dashboard), notifikasi dashboard yang benar-benar dinamis (saat ini masih contoh statis), dan pengujian menyeluruh sebelum dipakai produksi penuh. Beri tahu mana yang ingin dilanjutkan.

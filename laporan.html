@@ -48,20 +48,13 @@
         </button>
         <div>
           <div class="page-title">Laporan</div>
-          <div class="page-crumb">Laporan pemeliharaan, BBM dan anggaran</div>
+          <div class="page-crumb">Laporan pemeliharaan, BBM, dan anggaran — siap cetak / PDF / Excel</div>
         </div>
       </div>
       <div class="topbar-right">
         <div class="context-pill">
           <span>TA <strong id="ctxYear">2026</strong></span>
-          <select id="ctxStage">
-            <option value="murni">Murni</option>
-            <option value="perubahan">Perubahan</option>
-          </select>
-        </div>
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" placeholder="Cari…" />
+          <select id="ctxStage"><option value="murni">Murni</option><option value="perubahan">Perubahan</option></select>
         </div>
         <div class="user-chip" id="userChip"></div>
         <button class="icon-btn" id="logoutBtn" title="Keluar">
@@ -71,37 +64,102 @@
     </header>
 
     <div class="content">
-      <div class="wip-panel">
-        <div class="w-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4Z"/></svg>
-        </div>
-        <h3>Pusat Laporan — dalam pengembangan tahap berikutnya</h3>
-        <p>Hasilkan laporan pemeliharaan kendaraan/peralatan, rekap BBM, dan DPA vs Realisasi dengan filter tahun, tahapan, bulan dan rekening — siap cetak, PDF, atau Excel.</p>
-        <div class="wip-fields">
-          <span>Filter Periode</span>
-          <span>Preview</span>
-          <span>Cetak</span>
-          <span>Export PDF</span>
-          <span>Export Excel</span>
-        </div>
-        <div style="margin-top:26px;">
-          <a href="dashboard.html" class="btn btn-ghost btn-sm">← Kembali ke Dashboard</a>
-        </div>
+
+      <div class="chip-tabs" style="width:fit-content;margin-bottom:18px;">
+        <button class="active" data-tab="anggaran">Anggaran &amp; Realisasi</button>
+        <button data-tab="pemeliharaan">Pemeliharaan Kendaraan</button>
+        <button data-tab="bbm">BBM</button>
       </div>
+
+      <!-- ============ LAPORAN ANGGARAN VS REALISASI ============ -->
+      <div class="lap-tab" id="lap-anggaran">
+        <div class="print-header">
+          <div class="ph-title">LAPORAN DPA VS REALISASI</div>
+          <div class="ph-sub" id="phSubAnggaran">Tahun Anggaran 2026 — Murni</div>
+          <div class="ph-meta"><span>SIMPELBMD</span><span id="phDateAnggaran"></span></div>
+        </div>
+        <div class="toolbar">
+          <div class="toolbar-left"></div>
+          <div class="toolbar-right">
+            <button class="btn btn-ghost btn-sm" id="btnPrintAnggaran">Cetak / PDF</button>
+            <button class="btn btn-ghost btn-sm" id="btnExportAnggaran">Export Excel</button>
+          </div>
+        </div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Rekening</th><th>Uraian</th><th style="text-align:right;">Pagu</th><th style="text-align:right;">Realisasi</th><th style="text-align:right;">Sisa</th><th style="text-align:right;">%</th></tr></thead>
+            <tbody id="anggaranTableBody"></tbody>
+            <tfoot id="anggaranTableFoot"></tfoot>
+          </table>
+        </div></div>
+      </div>
+
+      <!-- ============ LAPORAN PEMELIHARAAN KENDARAAN ============ -->
+      <div class="lap-tab" id="lap-pemeliharaan" style="display:none;">
+        <div class="print-header">
+          <div class="ph-title">LAPORAN PEMELIHARAAN KENDARAAN</div>
+          <div class="ph-sub" id="phSubPemeliharaan">Seluruh periode</div>
+          <div class="ph-meta"><span>SIMPELBMD</span><span id="phDatePemeliharaan"></span></div>
+        </div>
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="date" class="filter-select" id="pmlFrom" />
+            <input type="date" class="filter-select" id="pmlTo" />
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-ghost btn-sm" id="btnFilterPml">Terapkan Filter</button>
+            <button class="btn btn-ghost btn-sm" id="btnPrintPml">Cetak / PDF</button>
+            <button class="btn btn-ghost btn-sm" id="btnExportPml">Export Excel</button>
+          </div>
+        </div>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>No</th><th>Tanggal</th><th>Nopol</th><th>Kendaraan</th><th>Pekerjaan</th><th>Penyedia</th><th style="text-align:right;">Nilai</th></tr></thead>
+            <tbody id="pmlTableBody"></tbody>
+            <tfoot id="pmlTableFoot"></tfoot>
+          </table>
+        </div></div>
+      </div>
+
+      <!-- ============ LAPORAN BBM ============ -->
+      <div class="lap-tab" id="lap-bbm" style="display:none;">
+        <div class="print-header">
+          <div class="ph-title">LAPORAN BBM</div>
+          <div class="ph-sub">Rekap bulanan &amp; per kendaraan</div>
+          <div class="ph-meta"><span>SIMPELBMD</span><span id="phDateBbm"></span></div>
+        </div>
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="date" class="filter-select" id="bbmFrom" />
+            <input type="date" class="filter-select" id="bbmTo" />
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-ghost btn-sm" id="btnFilterBbm">Terapkan Filter</button>
+            <button class="btn btn-ghost btn-sm" id="btnPrintBbm">Cetak / PDF</button>
+            <button class="btn btn-ghost btn-sm" id="btnExportBbm">Export Excel</button>
+          </div>
+        </div>
+
+        <h4 style="font-size:13.5px;margin:6px 0 10px;color:var(--text-2);">Rekap BBM Bulanan</h4>
+        <div class="table-panel" style="margin-bottom:20px;"><div class="table-scroll">
+          <table class="data-table"><thead><tr><th>Bulan</th><th style="text-align:right;">Volume</th><th style="text-align:right;">Nilai</th></tr></thead><tbody id="bbmBulananBody"></tbody></table>
+        </div></div>
+
+        <h4 style="font-size:13.5px;margin:6px 0 10px;color:var(--text-2);">Rekap BBM per Kendaraan</h4>
+        <div class="table-panel"><div class="table-scroll">
+          <table class="data-table"><thead><tr><th>Nopol</th><th>Merk</th><th>Jumlah Kupon</th><th style="text-align:right;">Volume</th><th style="text-align:right;">Nilai</th></tr></thead><tbody id="bbmKendaraanBody"></tbody></table>
+        </div></div>
+      </div>
+
     </div>
   </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script>
-  (async () => {
-    const profile = await window.SIMPELBMD_UI.bootstrapPage();
-    if (!profile) return;
-    document.getElementById("ctxYear").textContent = localStorage.getItem("simpelbmd_ta") || "2026";
-    document.getElementById("ctxStage").value = localStorage.getItem("simpelbmd_tahapan") || "murni";
-  })();
-</script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/laporan.js"></script>
 </body>
 </html>
