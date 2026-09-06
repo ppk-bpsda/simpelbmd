@@ -560,3 +560,22 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
 
 .skeleton { background: linear-gradient(90deg, var(--panel-raised) 25%, var(--line-soft) 37%, var(--panel-raised) 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 6px; height: 14px; }
 @keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* ---------- Laporan: header cetak & aturan print ---------- */
+.print-header { display: none; }
+@media print {
+  .sidebar, .topbar, .toolbar, .chip-tabs, .scrim, .btn, .action-icons, .modal-scrim { display: none !important; }
+  .main { margin-left: 0 !important; }
+  .content { padding: 0 !important; max-width: none !important; }
+  body { background: #fff !important; color: #111 !important; }
+  .print-header {
+    display: block; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #111;
+  }
+  .print-header .ph-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+  .print-header .ph-sub { font-size: 12px; margin-top: 3px; }
+  .print-header .ph-meta { display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: #333; }
+  .table-panel, .panel { background: #fff !important; border-color: #ccc !important; box-shadow: none !important; }
+  table.data-table th, table.data-table td { color: #111 !important; border-color: #ddd !important; }
+  .badge { border: 1px solid #999; color: #111 !important; background: #f2f2f2 !important; }
+  .badge::before { display: none; }
+}
