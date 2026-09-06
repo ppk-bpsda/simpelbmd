@@ -382,6 +382,31 @@
     }
   }
 
+  // ================= SMART IMPORT: MASTER PERALATAN =================
+  function openImportEquipment() {
+    SmartImport.open({
+      title: "Import Master Peralatan",
+      description: "Unggah daftar peralatan/perlengkapan. Kolom akan dideteksi otomatis.",
+      fields: [
+        { key: "nomor_aset", label: "Nomor Aset", aliases: ["no aset", "kode aset", "asset number", "kode barang"], required: true, type: "text" },
+        { key: "nama", label: "Nama Peralatan", aliases: ["nama barang", "nama alat", "item name"], required: true, type: "text" },
+        { key: "merk", label: "Merk", aliases: ["brand"], required: false, type: "text" },
+        { key: "tipe", label: "Tipe", aliases: ["model"], required: false, type: "text" },
+        { key: "tahun", label: "Tahun", aliases: ["tahun perolehan", "year"], required: false, type: "number" },
+        { key: "lokasi", label: "Lokasi", aliases: ["ruangan", "location"], required: false, type: "text" },
+        { key: "kondisi", label: "Kondisi", aliases: ["condition"], required: false, type: "text" },
+      ],
+      onImport: async (rows) => {
+        const imported = await DATA.bulkUpsertEquipment(profile, rows);
+        imported.forEach((eq) => {
+          const idx = equipmentList.findIndex((x) => x.id === eq.id);
+          if (idx >= 0) equipmentList[idx] = eq; else equipmentList.push(eq);
+        });
+      },
+      afterImport: () => { equipmentList.sort((a, b) => a.nama.localeCompare(b.nama)); renderEqTable(); },
+    });
+  }
+
   // ================= Konfirmasi hapus (shared) =================
   function confirmDelete(type, id, label) {
     deleteTarget = { type, id };
@@ -462,6 +487,7 @@
     el("equipmentModalClose").addEventListener("click", () => el("equipmentModal").classList.remove("show"));
     el("equipmentDoneBtn").addEventListener("click", () => { el("equipmentModal").classList.remove("show"); renderAlat(); });
     el("eqAddBtn").addEventListener("click", saveEquipment);
+    el("eqImportBtn").addEventListener("click", openImportEquipment);
 
     el("accountModalClose").addEventListener("click", () => el("accountModal").classList.remove("show"));
     el("accountCancelBtn").addEventListener("click", () => el("accountModal").classList.remove("show"));

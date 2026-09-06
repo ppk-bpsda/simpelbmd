@@ -307,74 +307,38 @@
     XLSX.writeFile(wb, `DPA_${ctx.fiscalYear}_${ctx.stage}.xlsx`);
   }
 
-  // ---------------- Import rincian Excel ----------------
-  async function openImportModal() {
-    const sel = el("importDpaSelect");
-    sel.innerHTML = dpaList.map((d) => `<option value="${d.id}">${d.nomor_dpa}</option>`).join("") || `<option value="">Tidak ada DPA tersedia</option>`;
-    el("importFile").value = "";
-    el("importPreviewWrap").style.display = "none";
-    el("importConfirmBtn").disabled = true;
-    importRows = [];
-    el("importModal").classList.add("show");
-  }
-  function closeImportModal() { el("importModal").classList.remove("show"); }
-
-  function handleImportFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const wb = XLSX.read(evt.target.result, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      const accByKode = Object.fromEntries(accounts.map((a) => [String(a.kode).trim(), a]));
-      let validCount = 0;
-      importRows = rows.map((r) => {
-        const kode = String(r.kode_rekening ?? r["Kode Rekening"] ?? "").trim();
-        const acc = accByKode[kode];
-        const volume = parseFloat(r.volume ?? r.Volume ?? 0) || 0;
-        const harga = parseFloat(r.harga_satuan ?? r["Harga Satuan"] ?? 0) || 0;
-        const valid = !!acc && volume > 0;
-        if (valid) validCount++;
-        return {
-          kode, satuan: String(r.satuan ?? r.Satuan ?? ""), volume, harga_satuan: harga,
-          account_id: acc?.id, uraian: acc?.uraian || "Rekening tidak ditemukan", valid,
-        };
-      });
-      el("importSummary").textContent = `${importRows.length} baris ditemukan · ${validCount} valid · ${importRows.length - validCount} bermasalah.`;
-      const table = el("importPreviewTable");
-      table.innerHTML = `
-        <thead><tr><th>Kode</th><th>Uraian</th><th>Satuan</th><th>Volume</th><th>Harga Satuan</th><th>Status</th></tr></thead>
-        <tbody>${importRows.map((r) => `
-          <tr>
-            <td>${r.kode || "-"}</td><td>${r.uraian}</td><td>${r.satuan || "-"}</td>
-            <td class="cell-num">${r.volume}</td><td class="cell-num">${money(r.harga_satuan)}</td>
-            <td>${r.valid ? '<span class="badge badge-ok">Valid</span>' : '<span class="badge badge-bad">Error</span>'}</td>
-          </tr>`).join("")}</tbody>`;
-      el("importPreviewWrap").style.display = "block";
-      el("importConfirmBtn").disabled = validCount === 0 || !el("importDpaSelect").value;
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  async function confirmImport() {
-    const dpaId = el("importDpaSelect").value;
-    const validRows = importRows.filter((r) => r.valid);
-    if (!dpaId || !validRows.length) return;
-    try {
-      const existing = await DATA.getDpaDetail(dpaId);
-      const currentRows = (existing.dpa_details || []).filter((r) => !r.deleted_at).map((r) => ({
-        account_id: r.account_id, satuan: r.satuan, volume: r.volume, harga_satuan: r.harga_satuan,
-      }));
-      const merged = [...currentRows, ...validRows.map((r) => ({ account_id: r.account_id, satuan: r.satuan, volume: r.volume, harga_satuan: r.harga_satuan }))];
-      await DATA.replaceDpaDetails(profile, dpaId, merged);
-      window.SIMPELBMD_UI.toast(`${validRows.length} baris rincian berhasil diimpor.`);
-      closeImportModal();
-      await loadList();
-    } catch (e) {
-      window.SIMPELBMD_UI.toast("Import gagal: " + e.message, "bad");
+  // ---------------- Import rincian Excel (Smart Import: deteksi kolom otomatis) ----------------
+  function openImportModal() {
+    if (!dpaList.length) {
+      window.SIMPELBMD_UI.toast("Belum ada DPA pada periode ini. Tambahkan DPA terlebih dahulu.", "warn");
+      return;
     }
+    SmartImport.open({
+      title: "Import Rincian DPA dari Excel",
+      description: "Sistem akan mendeteksi kolom kode rekening, satuan, volume, dan harga secara otomatis.",
+      context: { label: "Pilih DPA Tujuan", options: dpaList.map((d) => ({ value: d.id, label: d.nomor_dpa })) },
+      fields: [
+        { key: "kode_rekening", label: "Kode Rekening", aliases: ["kode rek", "kode", "account code", "no rekening"], required: true, type: "text" },
+        { key: "satuan", label: "Satuan", aliases: ["unit", "uom"], required: false, type: "text" },
+        { key: "volume", label: "Volume", aliases: ["jumlah", "qty", "quantity"], required: true, type: "number" },
+        { key: "harga_satuan", label: "Harga Satuan", aliases: ["harga", "unit price", "harga per unit"], required: true, type: "number" },
+      ],
+      rowHook: (data) => {
+        const acc = accounts.find((a) => String(a.kode).trim().toLowerCase() === String(data.kode_rekening).trim().toLowerCase());
+        if (!acc) return { errors: [`Rekening "${data.kode_rekening}" tidak ditemukan di Master Rekening`] };
+        return { errors: [], patch: { account_id: acc.id } };
+      },
+      onImport: async (rows, dpaId) => {
+        const existing = await DATA.getDpaDetail(dpaId);
+        const currentRows = (existing.dpa_details || []).filter((r) => !r.deleted_at).map((r) => ({ account_id: r.account_id, satuan: r.satuan, volume: r.volume, harga_satuan: r.harga_satuan }));
+        const merged = [...currentRows, ...rows.map((r) => ({ account_id: r.account_id, satuan: r.satuan, volume: r.volume, harga_satuan: r.harga_satuan }))];
+        await DATA.replaceDpaDetails(profile, dpaId, merged);
+      },
+      afterImport: loadList,
+    });
   }
+
+  // ---------------- Modal: Tambah/Edit DPA (lanjutan) ----------------
 
   function bindEvents() {
     el("searchInput").addEventListener("input", renderList);
@@ -394,13 +358,6 @@
 
     el("btnExport").addEventListener("click", exportExcel);
     el("btnImport").addEventListener("click", openImportModal);
-    el("importModalClose").addEventListener("click", closeImportModal);
-    el("importCancelBtn").addEventListener("click", closeImportModal);
-    el("importFile").addEventListener("change", handleImportFile);
-    el("importDpaSelect").addEventListener("change", () => {
-      el("importConfirmBtn").disabled = !importRows.some((r) => r.valid) || !el("importDpaSelect").value;
-    });
-    el("importConfirmBtn").addEventListener("click", confirmImport);
   }
 
   window.DPA_UI = { openEdit, confirmDelete };

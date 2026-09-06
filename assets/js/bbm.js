@@ -143,6 +143,31 @@
     el("confirmModal").classList.add("show");
   }
 
+  // ================= SMART IMPORT: MASTER KENDARAAN =================
+  function openImportKendaraan() {
+    SmartImport.open({
+      title: "Import Master Kendaraan",
+      description: "Unggah daftar kendaraan dinas. Kolom akan dideteksi otomatis, jenis BBM bisa dilengkapi setelah import.",
+      fields: [
+        { key: "nomor_polisi", label: "Nomor Polisi", aliases: ["nopol", "no polisi", "plat nomor", "license plate"], required: true, type: "text" },
+        { key: "merk", label: "Merk", aliases: ["brand"], required: false, type: "text" },
+        { key: "tipe", label: "Tipe", aliases: ["model", "type"], required: false, type: "text" },
+        { key: "tahun", label: "Tahun", aliases: ["tahun pembuatan", "year"], required: false, type: "number" },
+        { key: "jenis_kendaraan", label: "Jenis Kendaraan", aliases: ["kategori", "jenis"], required: false, type: "text" },
+        { key: "unit_pengguna", label: "Unit Pengguna", aliases: ["unit", "bidang", "opd"], required: false, type: "text" },
+        { key: "penanggung_jawab", label: "Penanggung Jawab", aliases: ["pj", "pic", "person in charge"], required: false, type: "text" },
+      ],
+      onImport: async (rows) => {
+        const imported = await DATA.bulkUpsertVehicles(profile, rows);
+        imported.forEach((v) => {
+          const idx = vehicles.findIndex((x) => x.id === v.id);
+          if (idx >= 0) vehicles[idx] = v; else vehicles.push(v);
+        });
+      },
+      afterImport: () => { vehicles.sort((a, b) => a.nomor_polisi.localeCompare(b.nomor_polisi)); renderKendaraan(); },
+    });
+  }
+
   // ================= KUPON BBM =================
   async function loadKupon() {
     try {
@@ -342,6 +367,7 @@
 
     el("kendSearch").addEventListener("input", debounce(loadKendaraan, 350));
     el("btnAddKendaraan").addEventListener("click", openCreateKend);
+    el("btnImportKendaraan").addEventListener("click", openImportKendaraan);
     el("kendEmptyAddBtn").addEventListener("click", openCreateKend);
     el("kendModalClose").addEventListener("click", () => el("kendModal").classList.remove("show"));
     el("kendCancelBtn").addEventListener("click", () => el("kendModal").classList.remove("show"));

@@ -231,17 +231,60 @@
     }
   }
 
+  // ================= SMART IMPORT: REKENING =================
+  function openImportRek() {
+    SmartImport.open({
+      title: "Import Master Rekening",
+      description: "Unggah file rekap rekening belanja. Kolom akan dideteksi otomatis.",
+      fields: [
+        { key: "kode", label: "Kode Rekening", aliases: ["kode rek", "kode rekening", "account code", "kode_rekening", "no rekening"], required: true, type: "text" },
+        { key: "uraian", label: "Uraian", aliases: ["nama rekening", "deskripsi", "keterangan rekening", "account name"], required: true, type: "text" },
+        { key: "jenis_belanja", label: "Jenis Belanja", aliases: ["jenis", "kategori belanja", "tipe belanja"], required: false, type: "text" },
+      ],
+      onImport: async (rows) => {
+        const imported = await DATA.bulkUpsertAccounts(profile, rows);
+        imported.forEach((r) => {
+          const existingIdx = accounts.findIndex((a) => a.id === r.id);
+          if (existingIdx >= 0) accounts[existingIdx] = r; else accounts.push(r);
+        });
+        accounts.sort((a, b) => a.kode.localeCompare(b.kode));
+      },
+      afterImport: renderRekening,
+    });
+  }
+
+  // ================= SMART IMPORT: PENYEDIA =================
+  function openImportVen() {
+    SmartImport.open({
+      title: "Import Master Penyedia",
+      description: "Unggah daftar penyedia/rekanan. Kolom akan dideteksi otomatis.",
+      fields: [
+        { key: "nama", label: "Nama Penyedia", aliases: ["nama perusahaan", "nama rekanan", "vendor name", "supplier"], required: true, type: "text" },
+        { key: "npwp", label: "NPWP", aliases: ["no npwp", "tax id"], required: false, type: "text" },
+        { key: "kontak", label: "Kontak", aliases: ["no telepon", "telepon", "hp", "phone"], required: false, type: "text" },
+        { key: "alamat", label: "Alamat", aliases: ["address"], required: false, type: "text" },
+      ],
+      onImport: async (rows) => {
+        const imported = await DATA.bulkCreateVendors(profile, rows);
+        vendors.push(...imported);
+      },
+      afterImport: renderPenyedia,
+    });
+  }
+
   function bindEvents() {
     document.querySelectorAll(".chip-tabs button").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
     el("rekSearch").addEventListener("input", renderRekening);
     el("btnAddRek").addEventListener("click", openCreateRek);
+    el("btnImportRek").addEventListener("click", openImportRek);
     el("rekModalClose").addEventListener("click", () => el("rekModal").classList.remove("show"));
     el("rekCancelBtn").addEventListener("click", () => el("rekModal").classList.remove("show"));
     el("rekSaveBtn").addEventListener("click", saveRek);
 
     el("venSearch").addEventListener("input", renderPenyedia);
     el("btnAddVen").addEventListener("click", openCreateVen);
+    el("btnImportVen").addEventListener("click", openImportVen);
     el("venModalClose").addEventListener("click", () => el("venModal").classList.remove("show"));
     el("venCancelBtn").addEventListener("click", () => el("venModal").classList.remove("show"));
     el("venSaveBtn").addEventListener("click", saveVen);

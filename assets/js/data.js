@@ -614,6 +614,47 @@ const DATA = (() => {
     return bbmSummaryPerVehicle();
   }
 
+  // ---------------- Bulk import helpers (dipakai Smart Import) ----------------
+  async function bulkUpsertAccounts(profile, rows) {
+    const payload = rows.map((r) => ({ kode: r.kode, uraian: r.uraian, jenis_belanja: r.jenis_belanja || null, is_active: true }));
+    const { data, error } = await sb().from("accounts").upsert(payload, { onConflict: "kode" }).select();
+    if (error) throw error;
+    await logAudit("CREATE", "accounts", null, profile.id, null, { count: data.length });
+    return data;
+  }
+
+  async function bulkCreateVendors(profile, rows) {
+    const payload = rows.map((r) => ({ nama: r.nama, npwp: r.npwp || null, kontak: r.kontak || null, alamat: r.alamat || null }));
+    const { data, error } = await sb().from("vendors").insert(payload).select();
+    if (error) throw error;
+    await logAudit("CREATE", "vendors", null, profile.id, null, { count: data.length });
+    return data;
+  }
+
+  async function bulkUpsertVehicles(profile, rows) {
+    const payload = rows.map((r) => ({
+      nomor_polisi: r.nomor_polisi, merk: r.merk || null, tipe: r.tipe || null,
+      tahun: r.tahun || null, jenis_kendaraan: r.jenis_kendaraan || null,
+      unit_pengguna: r.unit_pengguna || null, penanggung_jawab: r.penanggung_jawab || null,
+      status: "aktif",
+    }));
+    const { data, error } = await sb().from("vehicles").upsert(payload, { onConflict: "nomor_polisi" }).select();
+    if (error) throw error;
+    await logAudit("CREATE", "vehicles", null, profile.id, null, { count: data.length });
+    return data;
+  }
+
+  async function bulkUpsertEquipment(profile, rows) {
+    const payload = rows.map((r) => ({
+      nomor_aset: r.nomor_aset, nama: r.nama, merk: r.merk || null, tipe: r.tipe || null,
+      tahun: r.tahun || null, lokasi: r.lokasi || null, kondisi: r.kondisi || null,
+    }));
+    const { data, error } = await sb().from("equipment").upsert(payload, { onConflict: "nomor_aset" }).select();
+    if (error) throw error;
+    await logAudit("CREATE", "equipment", null, profile.id, null, { count: data.length });
+    return data;
+  }
+
   // ---------------- Audit ----------------
   async function logAudit(activity, table, recordId, performedBy, before, after) {
     try {
@@ -649,6 +690,7 @@ const DATA = (() => {
     listMaintenanceVehicle, nextNomorPemeliharaan, createMaintenanceVehicle, updateMaintenanceVehicle, softDeleteMaintenanceVehicle,
     listMaintenanceEquipment, nextNomorPemeliharaanPeralatan, createMaintenanceEquipment, updateMaintenanceEquipment, softDeleteMaintenanceEquipment,
     laporanAnggaranRealisasi, laporanPemeliharaanKendaraan, laporanBbmBulanan, laporanBbmPerKendaraan,
+    bulkUpsertAccounts, bulkCreateVendors, bulkUpsertVehicles, bulkUpsertEquipment,
   };
 })();
 
