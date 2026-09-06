@@ -86,4 +86,26 @@ function formatTanggal(d) {
   return new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-window.SIMPELBMD_UI = { toast, bootstrapPage, formatRupiah, formatTanggal };
+/* Animasi hitung naik untuk angka KPI. formatFn menerima angka dan mengembalikan string tampilan. */
+function animateNumber(el, target, formatFn = (n) => Math.round(n).toLocaleString("id-ID"), duration = 700) {
+  if (!el) return;
+  const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReduced) { el.textContent = formatFn(target); return; }
+  const start = 0;
+  const startTime = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = start + (target - start) * eased;
+    el.textContent = formatFn(current);
+    if (progress < 1) requestAnimationFrame(tick);
+    else el.textContent = formatFn(target);
+  }
+  requestAnimationFrame(tick);
+}
+
+function animateRupiah(el, target, duration = 700) {
+  animateNumber(el, target, (n) => "Rp " + Math.round(n).toLocaleString("id-ID"), duration);
+}
+
+window.SIMPELBMD_UI = { toast, bootstrapPage, formatRupiah, formatTanggal, animateNumber, animateRupiah };

@@ -655,6 +655,54 @@ const DATA = (() => {
     return data;
   }
 
+  // ---------------- Manajemen Pengguna (Pengaturan Akun) ----------------
+  async function listUsers() {
+    const { data, error } = await sb().from("users").select("*").order("username");
+    if (error) throw error;
+    return data;
+  }
+
+  // Membuat auth user baru TANPA mengganti sesi admin yang sedang login.
+  // Menggunakan instance Supabase client terpisah (persistSession: false) khusus untuk signUp ini.
+  async function adminCreateUser(admin, { username, full_name, password, role }) {
+    const email = `${username.trim().toLowerCase()}@simpelbmd.local`;
+    const tempClient = window.supabase.createClient(window.SIMPELBMD.SUPABASE_URL, window.SIMPELBMD.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: signUpData, error: signUpError } = await tempClient.auth.signUp({ email, password });
+    if (signUpError) throw new Error(signUpError.message.includes("already registered") ? "Username ini sudah terdaftar." : signUpError.message);
+    const newUserId = signUpData.user?.id;
+    if (!newUserId) throw new Error("Gagal membuat akun baru. Coba lagi.");
+
+    const { data: profileRow, error: insertError } = await sb().from("users").insert({
+      id: newUserId, username: username.trim().toLowerCase(), email, full_name, role, is_active: true, created_by: admin.id,
+    }).select().single();
+    if (insertError) throw insertError;
+    await logAudit("CREATE", "users", newUserId, admin.id, null, profileRow);
+    return profileRow;
+  }
+
+  async function updateUserProfile(admin, userId, patch, before) {
+    const { data, error } = await sb().from("users").update({ ...patch, updated_by: admin.id, updated_at: new Date().toISOString() }).eq("id", userId).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "users", userId, admin.id, before, data);
+    return data;
+  }
+
+  // Verifikasi password lama dengan mencoba signIn di client terpisah, tanpa mengganggu sesi aktif.
+  async function verifyCurrentPassword(email, password) {
+    const tempClient = window.supabase.createClient(window.SIMPELBMD.SUPABASE_URL, window.SIMPELBMD.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await tempClient.auth.signInWithPassword({ email, password });
+    return !error;
+  }
+
+  async function changeOwnPassword(newPassword) {
+    const { error } = await sb().auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
   // ---------------- Audit ----------------
   async function logAudit(activity, table, recordId, performedBy, before, after) {
     try {
@@ -691,6 +739,7 @@ const DATA = (() => {
     listMaintenanceEquipment, nextNomorPemeliharaanPeralatan, createMaintenanceEquipment, updateMaintenanceEquipment, softDeleteMaintenanceEquipment,
     laporanAnggaranRealisasi, laporanPemeliharaanKendaraan, laporanBbmBulanan, laporanBbmPerKendaraan,
     bulkUpsertAccounts, bulkCreateVendors, bulkUpsertVehicles, bulkUpsertEquipment,
+    listUsers, adminCreateUser, updateUserProfile, verifyCurrentPassword, changeOwnPassword,
   };
 })();
 
