@@ -187,7 +187,7 @@
 
   function renderKupon() {
     const active = kuponList.filter((k) => k.status !== "dibatalkan");
-    el("kpiKuponVolume").textContent = active.reduce((s, k) => s + Number(k.volume || 0), 0).toLocaleString("id-ID") + " L";
+    el("kpiKuponVolume").textContent = active.reduce((s, k) => s + Number(k.lembar_100000 || 0) + Number(k.lembar_25000 || 0), 0).toLocaleString("id-ID");
     el("kpiKuponNilai").textContent = money(active.reduce((s, k) => s + Number(k.nilai || 0), 0));
     el("kpiKuponPending").textContent = kuponList.filter((k) => ["dibuat", "didistribusikan"].includes(k.status)).length;
     el("kpiKuponDone").textContent = kuponList.filter((k) => k.status === "direalisasikan").length;
@@ -203,7 +203,7 @@
         <td>${tgl(k.tanggal)}</td>
         <td>${k.vehicles?.nomor_polisi || "-"}</td>
         <td>${k.fuel_types?.nama || "-"}</td>
-        <td>${Number(k.volume).toLocaleString("id-ID")} L</td>
+        <td>${[k.lembar_100000 ? `${k.lembar_100000}×100rb` : null, k.lembar_25000 ? `${k.lembar_25000}×25rb` : null].filter(Boolean).join(" + ") || "-"}</td>
         <td class="cell-num">${money(k.nilai)}</td>
         <td>${k.kilometer_akhir ?? "-"}</td>
         <td><span class="badge ${STATUS_KUPON_BADGE[k.status]}">${STATUS_KUPON_LABEL[k.status]}</span></td>
@@ -234,8 +234,21 @@
       window.SIMPELBMD_UI.toast(`Belum ada tarif untuk kategori "${v.kategori}" pada TA ${DATA.ctx().fiscalYear}.`, "warn");
       return;
     }
-    el("fKuponNilai").value = rate.tarif_bulanan;
-    window.SIMPELBMD_UI.toast(`Nilai diisi Rp${Number(rate.tarif_bulanan).toLocaleString("id-ID")}/bulan sesuai kategori ${v.kategori}. Rekening BBM: ${rate.accounts?.kode || "-"}.`);
+    const nilai = Number(rate.tarif_bulanan);
+    el("fKuponNilai").value = nilai;
+    // Pecah otomatis ke lembar 100rb dulu, sisanya (kelipatan 25rb) ke lembar 25rb
+    const lembar100 = Math.floor(nilai / 100000);
+    const sisa = nilai - lembar100 * 100000;
+    const lembar25 = sisa > 0 ? Math.round(sisa / 25000) : 0;
+    el("fKuponLembar100").value = lembar100;
+    el("fKuponLembar25").value = lembar25;
+    window.SIMPELBMD_UI.toast(`Nilai diisi Rp${nilai.toLocaleString("id-ID")}/bulan (${lembar100}×100rb${lembar25 ? ` + ${lembar25}×25rb` : ""}) sesuai kategori ${v.kategori}. Rekening BBM: ${rate.accounts?.kode || "-"}.`);
+  }
+
+  function recalcNilaiFromLembar() {
+    const l100 = parseInt(el("fKuponLembar100").value, 10) || 0;
+    const l25 = parseInt(el("fKuponLembar25").value, 10) || 0;
+    if (l100 || l25) el("fKuponNilai").value = l100 * 100000 + l25 * 25000;
   }
 
   async function openCreateKupon() {
@@ -247,7 +260,8 @@
     el("fKuponVehicle").innerHTML = vehicleOptionsHtml();
     el("fKuponFuelType").innerHTML = fuelOptionsHtml();
     el("fKuponTanggal").value = new Date().toISOString().slice(0, 10);
-    el("fKuponVolume").value = "";
+    el("fKuponLembar100").value = 0;
+    el("fKuponLembar25").value = 0;
     el("fKuponNilai").value = "";
     el("fKuponPetugas").value = "";
     el("fKuponKmAwal").value = "";
@@ -269,7 +283,8 @@
     el("fKuponFuelType").innerHTML = fuelOptionsHtml(k.fuel_type_id);
     el("fKuponNomor").value = k.nomor_kupon;
     el("fKuponTanggal").value = k.tanggal;
-    el("fKuponVolume").value = k.volume;
+    el("fKuponLembar100").value = k.lembar_100000 || 0;
+    el("fKuponLembar25").value = k.lembar_25000 || 0;
     el("fKuponNilai").value = k.nilai;
     el("fKuponPetugas").value = k.petugas || "";
     el("fKuponKmAwal").value = k.kilometer_awal ?? "";
@@ -287,12 +302,14 @@
     const vehicle_id = el("fKuponVehicle").value;
     const nomor_kupon = el("fKuponNomor").value.trim();
     const tanggal = el("fKuponTanggal").value;
-    const volume = parseFloat(el("fKuponVolume").value) || 0;
+    const lembar_100000 = parseInt(el("fKuponLembar100").value, 10) || 0;
+    const lembar_25000 = parseInt(el("fKuponLembar25").value, 10) || 0;
+    const nilai = parseFloat(el("fKuponNilai").value) || 0;
     const kmAwal = parseFloat(el("fKuponKmAwal").value) || 0;
     const kmAkhir = parseFloat(el("fKuponKmAkhir").value) || 0;
 
-    if (!vehicle_id || !nomor_kupon || !tanggal || volume <= 0) {
-      errBox.textContent = "Kendaraan, Nomor Kupon, Tanggal, dan Volume (lebih dari 0) wajib diisi.";
+    if (!vehicle_id || !nomor_kupon || !tanggal || nilai <= 0) {
+      errBox.textContent = "Kendaraan, Nomor Kupon, Tanggal, dan Nilai (lebih dari 0) wajib diisi.";
       errBox.classList.add("show");
       return;
     }
@@ -312,7 +329,7 @@
 
     const payload = {
       vehicle_id, nomor_kupon, tanggal, fuel_type_id: el("fKuponFuelType").value || null,
-      volume, nilai: parseFloat(el("fKuponNilai").value) || 0, petugas: el("fKuponPetugas").value.trim() || null,
+      lembar_100000, lembar_25000, nilai, petugas: el("fKuponPetugas").value.trim() || null,
       kilometer_awal: kmAwal || null, kilometer_akhir: kmAkhir || null, keterangan: el("fKuponKeterangan").value.trim() || null,
     };
 
@@ -374,7 +391,7 @@
     if (!kuponList.length) { window.SIMPELBMD_UI.toast("Tidak ada data untuk diekspor.", "warn"); return; }
     const rows = kuponList.map((k) => ({
       "No. Kupon": k.nomor_kupon, "Tanggal": tgl(k.tanggal), "Nopol": k.vehicles?.nomor_polisi || "-",
-      "Jenis BBM": k.fuel_types?.nama || "-", "Volume": k.volume, "Nilai": k.nilai,
+      "Jenis BBM": k.fuel_types?.nama || "-", "Lembar Rp100.000": k.lembar_100000 || 0, "Lembar Rp25.000": k.lembar_25000 || 0, "Nilai": k.nilai,
       "KM Awal": k.kilometer_awal ?? "-", "KM Akhir": k.kilometer_akhir ?? "-", "Status": STATUS_KUPON_LABEL[k.status],
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -403,6 +420,8 @@
     el("kuponCancelBtn").addEventListener("click", () => el("kuponModal").classList.remove("show"));
     el("kuponSaveBtn").addEventListener("click", saveKupon);
     el("btnAutoTarif").addEventListener("click", applyAutoTarif);
+    el("fKuponLembar100").addEventListener("input", recalcNilaiFromLembar);
+    el("fKuponLembar25").addEventListener("input", recalcNilaiFromLembar);
     el("btnExportKupon").addEventListener("click", exportKupon);
 
     el("confirmCancelBtn").addEventListener("click", () => el("confirmModal").classList.remove("show"));
