@@ -449,6 +449,12 @@ const DATA = (() => {
     return data;
   }
 
+  async function listVehicleCategoryRates(fiscalYear) {
+    const { data, error } = await sb().from("vehicle_category_rates").select("*, accounts(kode, uraian)").eq("fiscal_year", fiscalYear);
+    if (error) throw error;
+    return data;
+  }
+
   // ---------------- Master Peralatan (equipment) ----------------
   async function listEquipment({ search } = {}) {
     let q = sb().from("equipment").select("*").is("deleted_at", null).order("nama");
@@ -635,6 +641,7 @@ const DATA = (() => {
     const payload = rows.map((r) => ({
       nomor_polisi: r.nomor_polisi, merk: r.merk || null, tipe: r.tipe || null,
       tahun: r.tahun || null, jenis_kendaraan: r.jenis_kendaraan || null,
+      kategori: r.kategori || null,
       unit_pengguna: r.unit_pengguna || null, penanggung_jawab: r.penanggung_jawab || null,
       status: "aktif",
     }));
@@ -733,7 +740,7 @@ const DATA = (() => {
     listProcurements, getProcurementDetail, nextNomorPengadaan, createProcurement, updateProcurement, softDeleteProcurement,
     listFuelProcurements, nextNomorPengadaanBbm, createFuelProcurement, updateFuelProcurement, softDeleteFuelProcurement,
     listVehicles, createVehicle, updateVehicle, softDeleteVehicle,
-    listFuelCoupons, getLastKilometer, nextNomorKupon, createFuelCoupon, updateFuelCoupon, setStatusFuelCoupon, softDeleteFuelCoupon, bbmSummaryPerVehicle,
+    listFuelCoupons, getLastKilometer, nextNomorKupon, createFuelCoupon, updateFuelCoupon, setStatusFuelCoupon, softDeleteFuelCoupon, bbmSummaryPerVehicle, listVehicleCategoryRates,
     listEquipment, createEquipment, updateEquipment, softDeleteEquipment,
     listMaintenanceVehicle, nextNomorPemeliharaan, createMaintenanceVehicle, updateMaintenanceVehicle, softDeleteMaintenanceVehicle,
     listMaintenanceEquipment, nextNomorPemeliharaanPeralatan, createMaintenanceEquipment, updateMaintenanceEquipment, softDeleteMaintenanceEquipment,

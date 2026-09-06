@@ -6,6 +6,7 @@
   let fuelTypes = [];
   let vehicles = [];
   let kuponList = [];
+  let categoryRates = [];
   let editingKendId = null;
   let editingKuponId = null;
   let confirmAction = null;
@@ -24,6 +25,7 @@
     profile = await window.SIMPELBMD_UI.bootstrapPage();
     if (!profile) return;
     fuelTypes = await DATA.listFuelTypes();
+    try { categoryRates = await DATA.listVehicleCategoryRates(DATA.ctx().fiscalYear); } catch (e) { categoryRates = []; }
     bindEvents();
     await Promise.all([loadKendaraan(), loadKupon()]);
   }
@@ -55,7 +57,7 @@
         <td>${v.nomor_polisi}</td>
         <td>${[v.merk, v.tipe].filter(Boolean).join(" / ") || "-"}</td>
         <td>${v.tahun || "-"}</td>
-        <td>${v.jenis_kendaraan || "-"}</td>
+        <td>${v.kategori ? `<span class="badge badge-info">${v.kategori}</span>` : '<span class="text-muted">-</span>'}</td>
         <td>${fuelTypes.find((f) => f.id === v.fuel_type_id)?.nama || "-"}</td>
         <td>${v.unit_pengguna || "-"}</td>
         <td><span class="badge ${STATUS_KEND_BADGE[v.status]}">${STATUS_KEND_LABEL[v.status]}</span></td>
@@ -79,6 +81,7 @@
     el("kendFormError").classList.remove("show");
     ["fKendNopol", "fKendJenis", "fKendMerk", "fKendTipe", "fKendTahun", "fKendKapasitas", "fKendUnit", "fKendPJ"].forEach((id) => (el(id).value = ""));
     el("fKendFuelType").innerHTML = fuelOptionsHtml();
+    el("fKendKategori").value = "";
     el("fKendStatus").value = "aktif";
     el("kendModal").classList.add("show");
   }
@@ -95,6 +98,7 @@
     el("fKendTipe").value = v.tipe || "";
     el("fKendTahun").value = v.tahun || "";
     el("fKendFuelType").innerHTML = fuelOptionsHtml(v.fuel_type_id);
+    el("fKendKategori").value = v.kategori || "";
     el("fKendKapasitas").value = v.kapasitas_mesin || "";
     el("fKendUnit").value = v.unit_pengguna || "";
     el("fKendPJ").value = v.penanggung_jawab || "";
@@ -113,6 +117,7 @@
       merk: el("fKendMerk").value.trim() || null, tipe: el("fKendTipe").value.trim() || null,
       tahun: parseInt(el("fKendTahun").value, 10) || null,
       fuel_type_id: el("fKendFuelType").value || null,
+      kategori: el("fKendKategori").value || null,
       kapasitas_mesin: el("fKendKapasitas").value.trim() || null,
       unit_pengguna: el("fKendUnit").value.trim() || null,
       penanggung_jawab: el("fKendPJ").value.trim() || null,
@@ -153,7 +158,8 @@
         { key: "merk", label: "Merk", aliases: ["brand"], required: false, type: "text" },
         { key: "tipe", label: "Tipe", aliases: ["model", "type"], required: false, type: "text" },
         { key: "tahun", label: "Tahun", aliases: ["tahun pembuatan", "year"], required: false, type: "number" },
-        { key: "jenis_kendaraan", label: "Jenis Kendaraan", aliases: ["kategori", "jenis"], required: false, type: "text" },
+        { key: "jenis_kendaraan", label: "Jenis Kendaraan", aliases: ["jenis", "tipe kendaraan"], required: false, type: "text" },
+        { key: "kategori", label: "Kategori", aliases: ["kategori kendaraan", "klasifikasi", "golongan"], required: false, type: "text" },
         { key: "unit_pengguna", label: "Unit Pengguna", aliases: ["unit", "bidang", "opd"], required: false, type: "text" },
         { key: "penanggung_jawab", label: "Penanggung Jawab", aliases: ["pj", "pic", "person in charge"], required: false, type: "text" },
       ],
@@ -214,6 +220,22 @@
 
   function vehicleOptionsHtml(selectedId) {
     return `<option value="">Pilih kendaraan…</option>` + vehicles.filter((v) => v.status === "aktif" || v.id === selectedId).map((v) => `<option value="${v.id}" ${v.id === selectedId ? "selected" : ""}>${v.nomor_polisi} — ${v.merk || ""}</option>`).join("");
+  }
+
+  function applyAutoTarif() {
+    const vehicleId = el("fKuponVehicle").value;
+    const v = vehicles.find((x) => x.id === vehicleId);
+    if (!v || !v.kategori) {
+      window.SIMPELBMD_UI.toast("Pilih kendaraan dengan kategori terisi terlebih dahulu (atur di Master Kendaraan).", "warn");
+      return;
+    }
+    const rate = categoryRates.find((r) => r.kategori === v.kategori);
+    if (!rate) {
+      window.SIMPELBMD_UI.toast(`Belum ada tarif untuk kategori "${v.kategori}" pada TA ${DATA.ctx().fiscalYear}.`, "warn");
+      return;
+    }
+    el("fKuponNilai").value = rate.tarif_bulanan;
+    window.SIMPELBMD_UI.toast(`Nilai diisi Rp${Number(rate.tarif_bulanan).toLocaleString("id-ID")}/bulan sesuai kategori ${v.kategori}. Rekening BBM: ${rate.accounts?.kode || "-"}.`);
   }
 
   async function openCreateKupon() {
@@ -380,6 +402,7 @@
     el("kuponModalClose").addEventListener("click", () => el("kuponModal").classList.remove("show"));
     el("kuponCancelBtn").addEventListener("click", () => el("kuponModal").classList.remove("show"));
     el("kuponSaveBtn").addEventListener("click", saveKupon);
+    el("btnAutoTarif").addEventListener("click", applyAutoTarif);
     el("btnExportKupon").addEventListener("click", exportKupon);
 
     el("confirmCancelBtn").addEventListener("click", () => el("confirmModal").classList.remove("show"));

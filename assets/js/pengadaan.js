@@ -8,6 +8,7 @@
   let fuelTypes = [];
   let bmdList = [];
   let bbmList = [];
+  let categoryRates = [];
   let editingBmdId = null;
   let editingBbmId = null;
   let deleteTarget = null; // { type: 'bmd'|'bbm', id }
@@ -33,6 +34,7 @@
     });
 
     [accounts, vendors, fuelTypes] = await Promise.all([DATA.listAccounts(), DATA.listVendors(), DATA.listFuelTypes()]);
+    try { categoryRates = await DATA.listVehicleCategoryRates(ctx.fiscalYear); } catch (e) { categoryRates = []; }
 
     bindEvents();
     await Promise.all([loadBmd(), loadBbm()]);
@@ -306,6 +308,7 @@
     el("fBbmNilai").value = "Rp 0";
     el("fBbmPeriode").value = "";
     el("fBbmKeterangan").value = "";
+    el("fBbmKategori").value = "";
     el("fBbmNomor").value = await DATA.nextNomorPengadaanBbm();
     el("bbmModal").classList.add("show");
   }
@@ -326,6 +329,7 @@
     recalcBbmNilai();
     el("fBbmPeriode").value = b.periode || "";
     el("fBbmKeterangan").value = b.keterangan || "";
+    el("fBbmKategori").value = "";
     el("bbmModal").classList.add("show");
   }
 
@@ -461,6 +465,15 @@
     el("btnExportBbm").addEventListener("click", exportBbm);
     el("fBbmAccount").addEventListener("change", (e) => { if (e.target.value === "__new__") { e.target.value = ""; openAccountModal("fBbmAccount"); } });
     el("fBbmVendor").addEventListener("change", (e) => { if (e.target.value === "__new__") { e.target.value = ""; openVendorModal("fBbmVendor"); } });
+    el("fBbmKategori").addEventListener("change", (e) => {
+      const rate = categoryRates.find((r) => r.kategori === e.target.value);
+      if (rate && rate.account_id) {
+        el("fBbmAccount").value = rate.account_id;
+        window.SIMPELBMD_UI.toast(`Rekening diisi otomatis: ${rate.accounts?.kode} — ${rate.accounts?.uraian}`);
+      } else if (e.target.value) {
+        window.SIMPELBMD_UI.toast(`Belum ada aturan rekening untuk kategori "${e.target.value}" pada TA ini.`, "warn");
+      }
+    });
 
     el("accountModalClose").addEventListener("click", () => el("accountModal").classList.remove("show"));
     el("accountCancelBtn").addEventListener("click", () => el("accountModal").classList.remove("show"));
