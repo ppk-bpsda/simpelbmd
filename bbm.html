@@ -83,7 +83,7 @@
         <div class="table-panel">
           <div class="table-scroll">
             <table class="data-table">
-              <thead><tr><th>Nopol</th><th>Merk / Tipe</th><th>Tahun</th><th>Jenis</th><th>Jenis BBM</th><th>Unit Pengguna</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>Nopol</th><th>Merk / Tipe</th><th>Tahun</th><th>Kategori</th><th>Jenis BBM</th><th>Unit Pengguna</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="kendTableBody"><tr><td colspan="8"><div class="skeleton" style="width:100%;height:18px;"></div></td></tr></tbody>
             </table>
           </div>
@@ -156,7 +156,17 @@
       <div class="form-error" id="kendFormError"></div>
       <div class="form-grid">
         <div class="field"><label>Nomor Polisi</label><input type="text" id="fKendNopol" placeholder="mis. N 1234 XX" /></div>
-        <div class="field"><label>Jenis Kendaraan</label><input type="text" id="fKendJenis" placeholder="mis. Roda 4 / Roda 2" /></div>
+        <div class="field"><label>Jenis Kendaraan</label><input type="text" id="fKendJenis" placeholder="mis. Station Wagon, Sepeda Motor" /></div>
+      </div>
+      <div class="field">
+        <label>Kategori (untuk tarif kupon &amp; rekening BBM)</label>
+        <select id="fKendKategori">
+          <option value="">— Belum ditentukan —</option>
+          <option value="Sepeda Motor">Sepeda Motor</option>
+          <option value="Mobil Dinas Perorangan">Mobil Dinas Perorangan</option>
+          <option value="Mobil Dinas Penumpang">Mobil Dinas Penumpang</option>
+        </select>
+        <div class="hint">Menentukan tarif kupon BBM bulanan otomatis dan rekening yang dikurangi pagunya saat Pengadaan BBM.</div>
       </div>
       <div class="form-grid cols-3">
         <div class="field"><label>Merk</label><input type="text" id="fKendMerk" /></div>
@@ -206,9 +216,13 @@
       </div>
       <div class="form-grid cols-3">
         <div class="field"><label>Volume (Liter)</label><input type="number" id="fKuponVolume" min="0" step="0.01" /></div>
-        <div class="field"><label>Nilai (Rp)</label><input type="number" id="fKuponNilai" min="0" step="1" /></div>
+        <div class="field">
+          <label>Nilai (Rp)</label>
+          <div class="input-row"><input type="number" id="fKuponNilai" min="0" step="1" /></div>
+        </div>
         <div class="field"><label>Petugas</label><input type="text" id="fKuponPetugas" /></div>
       </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnAutoTarif" style="margin:-8px 0 14px;">Isi tarif bulanan otomatis</button>
       <div class="form-grid">
         <div class="field"><label>Kilometer Awal</label><input type="number" id="fKuponKmAwal" min="0" step="1" /></div>
         <div class="field"><label>Kilometer Akhir</label><input type="number" id="fKuponKmAkhir" min="0" step="1" /></div>

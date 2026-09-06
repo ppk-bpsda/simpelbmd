@@ -25,6 +25,34 @@ Jalankan `reset_data.sql` di Supabase SQL Editor untuk menghapus seluruh data tr
 - Progress bar animasi mengisi, angka KPI animasi hitung naik.
 - Background halaman memiliki gradien lembut yang bergerak perlahan (otomatis nonaktif jika perangkat pengguna mengaktifkan "reduce motion").
 
+### Aturan Kategori Kendaraan & Tarif BBM (baru)
+Mengikuti ketentuan yang Anda berikan, aplikasi kini mendukung:
+- **Kategori Kendaraan** (Sepeda Motor / Mobil Dinas Perorangan / Mobil Dinas Penumpang) sebagai field baru di Master Kendaraan.
+- **Tarif kupon BBM bulanan otomatis** per kategori (tombol "Isi tarif bulanan otomatis" di form Kupon BBM): Sepeda Motor Rp200.000, Mobil Dinas Perorangan Rp1.500.000, Mobil Dinas Penumpang Rp500.000 — dapat diubah per Tahun Anggaran lewat tabel `vehicle_category_rates` tanpa mengubah kode aplikasi.
+- **Pemetaan rekening otomatis saat Pengadaan BBM**: memilih Kategori Kendaraan di form Penyediaan BBM otomatis mengisi rekening Pemeliharaan Alat Angkutan yang sesuai. Untuk TA 2026, Mobil Dinas Penumpang otomatis memakai rekening yang sama dengan Mobil Dinas Perorangan (sesuai ketentuan Anda bahwa keduanya digabung tahun ini), karena aturan disimpan per Tahun Anggaran, tahun-tahun berikutnya bisa dipisah kembali cukup dengan menambah baris baru di `vehicle_category_rates`.
+
+Jalankan `migration_kategori_kendaraan.sql` di Supabase SQL Editor untuk mengaktifkan fitur ini (lihat bagian "Data BPSDA" di bawah untuk urutan menjalankan skrip).
+
+### Data BPSDA yang sudah disiapkan untuk diimpor
+Dari file yang Anda unggah (DPA Murni TA 2026 PDF dan Data Kendaraan/Peralatan Excel), sudah disiapkan:
+
+| File | Isi | Cara pakai |
+|---|---|---|
+| `import_dpa_bpsda_2026.sql` | 30 rekening, 1 DPA Murni TA 2026, 114 baris rincian, 330 baris Anggaran Kas bulanan (hasil ekstraksi PDF) | Jalankan di Supabase SQL Editor |
+| `migration_kategori_kendaraan.sql` | Kolom kategori + tabel tarif BBM, jalankan **setelah** file di atas | Jalankan di Supabase SQL Editor |
+| `import_kendaraan_BPSDA.xlsx` | 10 kendaraan (2 mobil dinas, 8 motor) lengkap dengan Kategori | Upload lewat Distribusi BBM → Master Kendaraan → Import Excel |
+| `import_peralatan_BPSDA.xlsx` | 198 baris peralatan/perlengkapan kantor | Upload lewat Pemeliharaan → Kelola Master Peralatan → Import Excel |
+
+**Urutan menjalankan:**
+1. `import_dpa_bpsda_2026.sql` (membuat rekening & DPA lebih dulu)
+2. `migration_kategori_kendaraan.sql` (butuh rekening BBM sudah ada dari langkah 1)
+3. Upload `import_kendaraan_BPSDA.xlsx` dan `import_peralatan_BPSDA.xlsx` lewat aplikasi (Smart Import)
+
+**Catatan penting soal akurasi ekstraksi:**
+- PDF DPA hanya mencantumkan rencana realisasi bulanan di level **sub kegiatan** (gabungan beberapa rekening), bukan per rekening. Nilai Anggaran Kas bulanan per rekening di atas adalah hasil **alokasi proporsional** berdasarkan porsi nilai tiap rekening dalam sub kegiatannya — bukan angka yang tertulis eksplisit di dokumen. Silakan periksa dan sesuaikan manual di menu Anggaran Kas bila diperlukan.
+- 5 dari 114 baris rincian menunjukkan Volume = 0 pada hasil ekstraksi otomatis — kemungkinan kesalahan pembacaan teks pada baris tersebut. Setelah data masuk, periksa Total Pagu DPA di aplikasi (harus tercatat sekitar Rp601.7 juta) dan bandingkan dengan dokumen asli.
+- **DPA Perubahan** belum diunggah — begitu tersedia, kirim file-nya dan saya siapkan skrip serupa (`stage = 'perubahan'`).
+
 ### Yang sudah bisa dipakai di modul DPA
 - Tambah/edit DPA dengan rincian rekening dinamis (baris bisa ditambah/dihapus), Jumlah dihitung otomatis (Volume × Harga Satuan), Total Pagu otomatis.
 - Tambah rekening baru langsung dari form (tanpa harus ke Master Data dulu).
