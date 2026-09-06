@@ -372,6 +372,248 @@ const DATA = (() => {
     await logAudit("DELETE", "fuel_procurements", id, profile.id, before, null);
   }
 
+  // ---------------- Master Kendaraan (vehicles) ----------------
+  async function listVehicles({ search } = {}) {
+    let q = sb().from("vehicles").select("*").is("deleted_at", null).order("nomor_polisi");
+    if (search) q = q.ilike("nomor_polisi", `%${search}%`);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data;
+  }
+  async function createVehicle(profile, row) {
+    const { data, error } = await sb().from("vehicles").insert(row).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "vehicles", data.id, profile.id, null, data);
+    return data;
+  }
+  async function updateVehicle(profile, id, row, before) {
+    const { data, error } = await sb().from("vehicles").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "vehicles", id, profile.id, before, data);
+    return data;
+  }
+  async function softDeleteVehicle(profile, id, before) {
+    const { error } = await sb().from("vehicles").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "vehicles", id, profile.id, before, null);
+  }
+
+  // ---------------- Kupon BBM ----------------
+  async function listFuelCoupons({ search, status, vehicleId } = {}) {
+    let q = sb().from("fuel_coupons").select("*, vehicles(nomor_polisi, merk, tipe), fuel_types(nama)").is("deleted_at", null).order("tanggal", { ascending: false });
+    if (search) q = q.ilike("nomor_kupon", `%${search}%`);
+    if (status) q = q.eq("status", status);
+    if (vehicleId) q = q.eq("vehicle_id", vehicleId);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data;
+  }
+  async function getLastKilometer(vehicleId, excludeCouponId) {
+    let q = sb().from("fuel_coupons").select("kilometer_akhir, tanggal").eq("vehicle_id", vehicleId).is("deleted_at", null).order("tanggal", { ascending: false }).limit(5);
+    const { data, error } = await q;
+    if (error) throw error;
+    const rows = (data || []).filter((r) => !excludeCouponId || true);
+    return rows.length ? Math.max(...rows.map((r) => Number(r.kilometer_akhir || 0))) : 0;
+  }
+  async function nextNomorKupon() {
+    const { count, error } = await sb().from("fuel_coupons").select("id", { count: "exact", head: true });
+    if (error) throw error;
+    return `KPN/${new Date().getFullYear()}/${String((count || 0) + 1).padStart(5, "0")}`;
+  }
+  async function createFuelCoupon(profile, row) {
+    const { data, error } = await sb().from("fuel_coupons").insert({ ...row, created_by: profile.id, updated_by: profile.id }).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "fuel_coupons", data.id, profile.id, null, data);
+    return data;
+  }
+  async function updateFuelCoupon(profile, id, row, before) {
+    const { data, error } = await sb().from("fuel_coupons").update({ ...row, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "fuel_coupons", id, profile.id, before, data);
+    return data;
+  }
+  async function setStatusFuelCoupon(profile, id, status, before) {
+    const { data, error } = await sb().from("fuel_coupons").update({ status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "fuel_coupons", id, profile.id, before, data);
+    return data;
+  }
+  async function softDeleteFuelCoupon(profile, id, before) {
+    const { error } = await sb().from("fuel_coupons").update({ deleted_at: new Date().toISOString(), deleted_by: profile.id }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "fuel_coupons", id, profile.id, before, null);
+  }
+  async function bbmSummaryPerVehicle() {
+    const { data, error } = await sb().from("v_bbm_per_kendaraan").select("*, vehicles(nomor_polisi, merk)");
+    if (error) throw error;
+    return data;
+  }
+
+  // ---------------- Master Peralatan (equipment) ----------------
+  async function listEquipment({ search } = {}) {
+    let q = sb().from("equipment").select("*").is("deleted_at", null).order("nama");
+    if (search) q = q.ilike("nama", `%${search}%`);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data;
+  }
+  async function createEquipment(profile, row) {
+    const { data, error } = await sb().from("equipment").insert(row).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "equipment", data.id, profile.id, null, data);
+    return data;
+  }
+  async function updateEquipment(profile, id, row, before) {
+    const { data, error } = await sb().from("equipment").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "equipment", id, profile.id, before, data);
+    return data;
+  }
+  async function softDeleteEquipment(profile, id, before) {
+    const { error } = await sb().from("equipment").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "equipment", id, profile.id, before, null);
+  }
+
+  // ---------------- Pemeliharaan Kendaraan ----------------
+  async function listMaintenanceVehicle({ search, vehicleId } = {}) {
+    let q = sb().from("maintenance_vehicle").select("*, vehicles(nomor_polisi, merk, tipe), vendors(nama)").is("deleted_at", null).order("tanggal", { ascending: false });
+    if (vehicleId) q = q.eq("vehicle_id", vehicleId);
+    if (search) q = q.ilike("nomor_transaksi", `%${search}%`);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data;
+  }
+  async function nextNomorPemeliharaan() {
+    const { count, error } = await sb().from("maintenance_vehicle").select("id", { count: "exact", head: true });
+    if (error) throw error;
+    return `PML/${new Date().getFullYear()}/${String((count || 0) + 1).padStart(4, "0")}`;
+  }
+  async function createMaintenanceVehicle(profile, row) {
+    const { data, error } = await sb().from("maintenance_vehicle").insert({ ...row, created_by: profile.id }).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "maintenance_vehicle", data.id, profile.id, null, data);
+    return data;
+  }
+  async function updateMaintenanceVehicle(profile, id, row, before) {
+    const { data, error } = await sb().from("maintenance_vehicle").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "maintenance_vehicle", id, profile.id, before, data);
+    return data;
+  }
+  async function softDeleteMaintenanceVehicle(profile, id, before) {
+    const { error } = await sb().from("maintenance_vehicle").update({ deleted_at: new Date().toISOString(), deleted_by: profile.id }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "maintenance_vehicle", id, profile.id, before, null);
+  }
+
+  // ---------------- Pemeliharaan Peralatan ----------------
+  async function listMaintenanceEquipment({ search, equipmentId } = {}) {
+    let q = sb().from("maintenance_equipment").select("*, equipment(nama, nomor_aset), vendors(nama)").is("deleted_at", null).order("tanggal", { ascending: false });
+    if (equipmentId) q = q.eq("equipment_id", equipmentId);
+    if (search) q = q.ilike("nomor_transaksi", `%${search}%`);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data;
+  }
+  async function nextNomorPemeliharaanPeralatan() {
+    const { count, error } = await sb().from("maintenance_equipment").select("id", { count: "exact", head: true });
+    if (error) throw error;
+    return `PMP/${new Date().getFullYear()}/${String((count || 0) + 1).padStart(4, "0")}`;
+  }
+  async function createMaintenanceEquipment(profile, row) {
+    const { data, error } = await sb().from("maintenance_equipment").insert({ ...row, created_by: profile.id }).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "maintenance_equipment", data.id, profile.id, null, data);
+    return data;
+  }
+  async function updateMaintenanceEquipment(profile, id, row, before) {
+    const { data, error } = await sb().from("maintenance_equipment").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "maintenance_equipment", id, profile.id, before, data);
+    return data;
+  }
+  async function softDeleteMaintenanceEquipment(profile, id, before) {
+    const { error } = await sb().from("maintenance_equipment").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "maintenance_equipment", id, profile.id, before, null);
+  }
+
+  // ---------------- Master Data: Penyedia / Jenis BBM / Satuan (CRUD penuh) ----------------
+  async function updateVendor(profile, id, row, before) {
+    const { data, error } = await sb().from("vendors").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "vendors", id, profile.id, before, data);
+    return data;
+  }
+  async function softDeleteVendor(profile, id, before) {
+    const { error } = await sb().from("vendors").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "vendors", id, profile.id, before, null);
+  }
+  async function updateAccount(profile, id, row, before) {
+    const { data, error } = await sb().from("accounts").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    await logAudit("UPDATE", "accounts", id, profile.id, before, data);
+    return data;
+  }
+  async function deactivateAccount(profile, id, before) {
+    const { error } = await sb().from("accounts").update({ is_active: false }).eq("id", id);
+    if (error) throw error;
+    await logAudit("DELETE", "accounts", id, profile.id, before, null);
+  }
+  async function createFuelType(profile, row) {
+    const { data, error } = await sb().from("fuel_types").insert(row).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "fuel_types", data.id, profile.id, null, data);
+    return data;
+  }
+  async function listUnits() {
+    const { data, error } = await sb().from("units").select("*").order("nama");
+    if (error) throw error;
+    return data;
+  }
+  async function createUnit(profile, nama) {
+    const { data, error } = await sb().from("units").insert({ nama }).select().single();
+    if (error) throw error;
+    await logAudit("CREATE", "units", data.id, profile.id, null, data);
+    return data;
+  }
+
+  // ---------------- Laporan ----------------
+  async function laporanAnggaranRealisasi({ fiscalYear, stage }) {
+    const { data, error } = await sb().from("v_anggaran_vs_realisasi").select("*").eq("fiscal_year", fiscalYear).eq("stage", stage).order("kode");
+    if (error) throw error;
+    return data;
+  }
+  async function laporanPemeliharaanKendaraan({ from, to, vehicleId }) {
+    let q = sb().from("maintenance_vehicle").select("*, vehicles(nomor_polisi, merk), vendors(nama)").is("deleted_at", null).order("tanggal", { ascending: false });
+    if (from) q = q.gte("tanggal", from);
+    if (to) q = q.lte("tanggal", to);
+    if (vehicleId) q = q.eq("vehicle_id", vehicleId);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data;
+  }
+  async function laporanBbmBulanan({ from, to }) {
+    let q = sb().from("fuel_coupons").select("tanggal, volume, nilai, fuel_types(nama)").is("deleted_at", null).in("status", ["digunakan", "direalisasikan"]);
+    if (from) q = q.gte("tanggal", from);
+    if (to) q = q.lte("tanggal", to);
+    const { data, error } = await q;
+    if (error) throw error;
+    const byBulan = {};
+    (data || []).forEach((r) => {
+      const key = new Date(r.tanggal).toISOString().slice(0, 7);
+      if (!byBulan[key]) byBulan[key] = { bulan: key, volume: 0, nilai: 0 };
+      byBulan[key].volume += Number(r.volume || 0);
+      byBulan[key].nilai += Number(r.nilai || 0);
+    });
+    return Object.values(byBulan).sort((a, b) => a.bulan.localeCompare(b.bulan));
+  }
+  async function laporanBbmPerKendaraan() {
+    return bbmSummaryPerVehicle();
+  }
+
   // ---------------- Audit ----------------
   async function logAudit(activity, table, recordId, performedBy, before, after) {
     try {
@@ -391,15 +633,22 @@ const DATA = (() => {
 
   return {
     ctx,
-    listAccounts, quickCreateAccount,
-    listVendors, quickCreateVendor,
-    listFuelTypes,
+    listAccounts, quickCreateAccount, updateAccount, deactivateAccount,
+    listVendors, quickCreateVendor, updateVendor, softDeleteVendor,
+    listFuelTypes, createFuelType,
+    listUnits, createUnit,
     listDpa, getDpaDetail, createDpaHeader, updateDpaHeader, softDeleteDpa, replaceDpaDetails, nextNomorDpa,
     getPaguRealisasi, getAnggaranKasBulan,
     listRealisasi, createRealisasi, updateRealisasi, setStatusRealisasi, softDeleteRealisasi, nextNomorTransaksi,
     BULAN_NAMA, listBudgetCashSummary, getCashFlowChart, getBudgetCashRows, upsertBudgetCash,
     listProcurements, getProcurementDetail, nextNomorPengadaan, createProcurement, updateProcurement, softDeleteProcurement,
     listFuelProcurements, nextNomorPengadaanBbm, createFuelProcurement, updateFuelProcurement, softDeleteFuelProcurement,
+    listVehicles, createVehicle, updateVehicle, softDeleteVehicle,
+    listFuelCoupons, getLastKilometer, nextNomorKupon, createFuelCoupon, updateFuelCoupon, setStatusFuelCoupon, softDeleteFuelCoupon, bbmSummaryPerVehicle,
+    listEquipment, createEquipment, updateEquipment, softDeleteEquipment,
+    listMaintenanceVehicle, nextNomorPemeliharaan, createMaintenanceVehicle, updateMaintenanceVehicle, softDeleteMaintenanceVehicle,
+    listMaintenanceEquipment, nextNomorPemeliharaanPeralatan, createMaintenanceEquipment, updateMaintenanceEquipment, softDeleteMaintenanceEquipment,
+    laporanAnggaranRealisasi, laporanPemeliharaanKendaraan, laporanBbmBulanan, laporanBbmPerKendaraan,
   };
 })();
 
