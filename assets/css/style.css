@@ -50,13 +50,27 @@ body {
   margin: 0;
   font-family: var(--font-body);
   background: var(--ink-900);
-  background-image:
-    radial-gradient(1200px 600px at 100% -10%, rgba(62,99,221,0.10), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(0,212,224,0.06), transparent 55%);
-  background-attachment: fixed;
   color: var(--text-1);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "tnum" 1, "cv02" 1;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed; inset: -10%;
+  z-index: -1;
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, rgba(62,99,221,0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(0,212,224,0.08), transparent 55%);
+  animation: bgDrift 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes bgDrift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  100% { transform: translate(-2%, 2%) scale(1.05); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
 }
 h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; letter-spacing: -0.01em; }
 p { margin: 0; }
@@ -464,6 +478,82 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
 
 .text-muted { color: var(--text-3); }
 .mt-4 { margin-top: 16px; }
+
+/* ================= ANIMATION & INTERACTION SYSTEM ================= */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes shimmerGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,224,0); } 50% { box-shadow: 0 0 0 3px rgba(0,212,224,0.08); } }
+
+.content { animation: fadeIn .35s ease; }
+
+.kpi-card, .panel, .table-panel, .wip-panel {
+  animation: fadeInUp .45s cubic-bezier(.2,.7,.3,1) both;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.kpi-grid .kpi-card:nth-child(1) { animation-delay: .02s; }
+.kpi-grid .kpi-card:nth-child(2) { animation-delay: .08s; }
+.kpi-grid .kpi-card:nth-child(3) { animation-delay: .14s; }
+.kpi-grid .kpi-card:nth-child(4) { animation-delay: .2s; }
+.panel-grid .panel:nth-child(2) { animation-delay: .1s; }
+
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -18px rgba(0,0,0,0.55); border-color: var(--line); }
+.panel:hover, .table-panel:hover { box-shadow: 0 16px 34px -20px rgba(0,0,0,0.5); }
+
+.kpi-value { transition: color .2s ease; }
+
+/* Buttons: tactile press + subtle lift */
+.btn { transition: transform .12s ease, filter .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.btn:active { transform: scale(0.96); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgba(62,99,221,0.55); }
+.btn-ghost:hover { transform: translateY(-1px); }
+.icon-btn, .btn-icon { transition: transform .15s ease, color .15s ease, border-color .15s ease; }
+.icon-btn:hover, .btn-icon:hover { transform: translateY(-1px) scale(1.04); }
+.icon-btn:active, .btn-icon:active { transform: scale(0.93); }
+.action-icons button { transition: transform .12s ease, color .15s ease, border-color .15s ease; }
+.action-icons button:hover { transform: translateY(-1px) scale(1.06); }
+
+/* Nav items: smooth slide + glow on active */
+.nav-item { transition: background .18s ease, color .18s ease, padding-left .18s ease; }
+.nav-item:hover { padding-left: 16px; }
+.nav-item.active::before { animation: shimmerGlow 2.4s ease-in-out infinite; }
+
+/* Sidebar collapse smoothing already has width transition; add icon nudge */
+.sidebar-head .mark { transition: transform .3s ease; }
+.sidebar-head .mark:hover { transform: rotate(-6deg) scale(1.05); }
+
+/* Inputs: focus glow pulse */
+.field input, .field select, .field textarea, .filter-select, .search-box input {
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  box-shadow: 0 0 0 3px rgba(62,99,221,0.18);
+}
+.search-box { transition: border-color .15s ease, box-shadow .15s ease; }
+.search-box:focus-within { border-color: var(--brand-strong); box-shadow: 0 0 0 3px rgba(62,99,221,0.14); }
+
+/* Table rows: subtle slide-in on hover feel */
+table.data-table tbody tr { transition: background .15s ease; }
+
+/* Modal: pop-in instead of instant appear */
+.modal-scrim { transition: background .18s ease; }
+.modal-scrim .modal-box { animation: none; }
+.modal-scrim.show .modal-box { animation: popIn .22s cubic-bezier(.2,.7,.3,1) both; }
+
+/* Progress bars animate their width */
+.progress-fill { transition: width .6s cubic-bezier(.3,.8,.3,1); }
+
+/* Badge subtle pop on render */
+.badge { animation: fadeIn .3s ease; }
+
+/* Chart panels: gentle reveal */
+canvas { animation: fadeIn .5s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .content, .kpi-card, .panel, .table-panel, .wip-panel, .badge, canvas, .modal-scrim.show .modal-box {
+    animation: none !important;
+  }
+}
 
 /* ---------- Toolbar (list pages) ---------- */
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
