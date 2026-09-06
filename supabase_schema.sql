@@ -296,8 +296,10 @@ create table fuel_coupons (
   tanggal date not null,
   vehicle_id uuid not null references vehicles(id),
   fuel_type_id uuid references fuel_types(id),
-  volume numeric(18,2) not null,
+  volume numeric(18,2), -- opsional: distribusi BBM di sini berbasis nominal kupon (pecahan), bukan liter x harga
   nilai numeric(18,2) not null default 0,
+  lembar_100000 int not null default 0,
+  lembar_25000 int not null default 0,
   petugas text,
   kilometer_awal numeric(12,2),
   kilometer_akhir numeric(12,2),

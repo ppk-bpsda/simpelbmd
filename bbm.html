@@ -100,7 +100,7 @@
       <!-- ============ TAB: KUPON BBM ============ -->
       <div id="tabKupon" style="display:none;">
         <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr);">
-          <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total Volume</span></div><div class="kpi-value" id="kpiKuponVolume">0 L</div><div class="kpi-sub">Seluruh kupon tercatat</div></div>
+          <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total Lembar Kupon</span></div><div class="kpi-value" id="kpiKuponVolume">0</div><div class="kpi-sub">Rp100.000 + Rp25.000, seluruh kupon tercatat</div></div>
           <div class="kpi-card accent-signal"><div class="kpi-top"><span class="kpi-label">Total Nilai</span></div><div class="kpi-value" id="kpiKuponNilai">Rp 0</div><div class="kpi-sub">Kupon digunakan/direalisasikan</div></div>
           <div class="kpi-card accent-warn"><div class="kpi-top"><span class="kpi-label">Belum Direalisasikan</span></div><div class="kpi-value" id="kpiKuponPending">0</div><div class="kpi-sub">Dibuat + Didistribusikan</div></div>
           <div class="kpi-card accent-ok"><div class="kpi-top"><span class="kpi-label">Direalisasikan</span></div><div class="kpi-value" id="kpiKuponDone">0</div><div class="kpi-sub">Kupon</div></div>
@@ -130,7 +130,7 @@
         <div class="table-panel">
           <div class="table-scroll">
             <table class="data-table">
-              <thead><tr><th>No. Kupon</th><th>Tanggal</th><th>Nopol</th><th>Jenis BBM</th><th>Volume</th><th style="text-align:right;">Nilai</th><th>KM Akhir</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>No. Kupon</th><th>Tanggal</th><th>Nopol</th><th>Jenis BBM</th><th>Pecahan</th><th style="text-align:right;">Nilai</th><th>KM Akhir</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="kuponTableBody"><tr><td colspan="9"><div class="skeleton" style="width:100%;height:18px;"></div></td></tr></tbody>
             </table>
           </div>
@@ -214,15 +214,19 @@
         <div class="field"><label>Kendaraan</label><select id="fKuponVehicle"></select></div>
         <div class="field"><label>Jenis BBM</label><select id="fKuponFuelType"></select></div>
       </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnAutoTarif" style="margin:0 0 14px;">Isi tarif bulanan otomatis</button>
       <div class="form-grid cols-3">
-        <div class="field"><label>Volume (Liter)</label><input type="number" id="fKuponVolume" min="0" step="0.01" /></div>
+        <div class="field"><label>Lembar Rp100.000</label><input type="number" id="fKuponLembar100" min="0" step="1" value="0" /></div>
+        <div class="field"><label>Lembar Rp25.000</label><input type="number" id="fKuponLembar25" min="0" step="1" value="0" /></div>
         <div class="field">
           <label>Nilai (Rp)</label>
           <div class="input-row"><input type="number" id="fKuponNilai" min="0" step="1" /></div>
         </div>
+      </div>
+      <div class="hint" style="margin:-8px 0 14px;">Isi jumlah lembar per pecahan kupon untuk menghitung Nilai otomatis, atau isi langsung kolom Nilai bila distribusinya tidak persis pecahan 100rb/25rb. Volume (liter) tidak diperlukan karena distribusi berbasis nominal kupon, bukan liter × harga per liter.</div>
+      <div class="form-grid">
         <div class="field"><label>Petugas</label><input type="text" id="fKuponPetugas" /></div>
       </div>
-      <button type="button" class="btn btn-ghost btn-sm" id="btnAutoTarif" style="margin:-8px 0 14px;">Isi tarif bulanan otomatis</button>
       <div class="form-grid">
         <div class="field"><label>Kilometer Awal</label><input type="number" id="fKuponKmAwal" min="0" step="1" /></div>
         <div class="field"><label>Kilometer Akhir</label><input type="number" id="fKuponKmAkhir" min="0" step="1" /></div>
