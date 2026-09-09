@@ -94,9 +94,11 @@ const MENU = [
 const ADMIN_ONLY_GROUPS = new Set(['Administrasi']);
 
 // State accordion disimpan di level modul supaya tetap terbuka saat navigasi
-// (Sidebar di-render ulang tiap hashchange, tapi modul ini tidak pernah di-reload).
+// (Sidebar di-render ulang tiap hashchange DAN tiap toggle grup, tapi modul ini
+// tidak pernah di-reload, jadi state di sini bertahan selama sesi berjalan).
 let expandedKey = null;
 let initialized = false;
+let lastActivePath = null; // dipakai untuk membedakan "navigasi sungguhan" vs "re-render karena toggle"
 
 function findGroupKeyByPath(path) {
   const found = MENU.find((g) => g.items.some((i) => i.path === path));
@@ -108,14 +110,18 @@ export function renderSidebar(root, profile) {
   const isAdmin = profile?.role === 'super_admin';
 
   if (!initialized) {
+    // Render pertama kali: buka grup yang berisi halaman aktif.
     expandedKey = findGroupKeyByPath(active);
     initialized = true;
-  } else {
-    const stillOwnsActive = MENU.some((g) => g.key === expandedKey && g.items.some((i) => i.path === active));
-    if (!stillOwnsActive) {
-      expandedKey = findGroupKeyByPath(active);
-    }
+    lastActivePath = active;
+  } else if (active !== lastActivePath) {
+    // Route benar-benar berubah (navigasi) -> otomatis buka grup pemilik halaman baru.
+    expandedKey = findGroupKeyByPath(active);
+    lastActivePath = active;
   }
+  // Kalau active sama dengan sebelumnya, berarti render ini dipicu oleh klik
+  // toggle accordion sendiri -> expandedKey (yang sudah di-set oleh handler klik)
+  // TIDAK boleh ditimpa di sini.
 
   const visibleGroups = MENU.filter((g) => !ADMIN_ONLY_GROUPS.has(g.group) || isAdmin);
 
