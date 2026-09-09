@@ -1,0 +1,105 @@
+import { getRingkasanAnggaran, getRingkasanPerJenisBelanja, getPenyerapanBulanan } from '../services/dashboardService.js';
+import { renderMonthlyAbsorptionChart } from '../charts/monthlyAbsorptionChart.js';
+import { formatRupiah, formatPercent, clampPercent } from '../utils/format.js';
+
+export async function renderDashboard(root, { tahunAnggaranId }) {
+  root.innerHTML = `
+    <div class="kpi-grid" id="kpi-slot">
+      ${skeletonCard()}${skeletonCard()}${skeletonCard()}${skeletonCard()}
+    </div>
+
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <div class="panel__title">Penyerapan Anggaran Bulanan</div>
+          <div class="panel__subtitle">Pagu vs Realisasi per bulan, Tahun Anggaran berjalan</div>
+        </div>
+      </div>
+      <div style="height:280px;"><canvas id="monthly-chart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <div class="panel__title">Ringkasan per Jenis Belanja</div>
+          <div class="panel__subtitle">Pajak/Perijinan • Pemeliharaan • BBM/Kupon BBM</div>
+        </div>
+      </div>
+      <div id="jenis-belanja-slot" class="kpi-grid"></div>
+    </div>
+  `;
+
+  if (!tahunAnggaranId) {
+    root.querySelector('#kpi-slot').innerHTML = emptyState(
+      'Belum ada Tahun Anggaran aktif',
+      'Tambahkan Tahun Anggaran terlebih dahulu di menu Administrasi.'
+    );
+    return;
+  }
+
+  try {
+    const [ringkasan, jenisBelanja, bulanan] = await Promise.all([
+      getRingkasanAnggaran(tahunAnggaranId),
+      getRingkasanPerJenisBelanja(tahunAnggaranId),
+      getPenyerapanBulanan(tahunAnggaranId),
+    ]);
+
+    root.querySelector('#kpi-slot').innerHTML = `
+      ${kpiCard('Total Pagu', formatRupiah(ringkasan.total_pagu), null, true)}
+      ${kpiCard('Total Realisasi', formatRupiah(ringkasan.total_realisasi))}
+      ${kpiCard('Sisa Anggaran', formatRupiah(ringkasan.total_sisa))}
+      ${kpiCard('Persentase Penyerapan', formatPercent(ringkasan.persentase_realisasi), ringkasan.persentase_realisasi)}
+    `;
+
+    const jenisSlot = root.querySelector('#jenis-belanja-slot');
+    if (!jenisBelanja.length) {
+      jenisSlot.innerHTML = emptyState('Belum ada data', 'Data akan tampil setelah DPA dan transaksi diinput.');
+    } else {
+      jenisSlot.innerHTML = jenisBelanja
+        .map(
+          (jb) => `
+            <div class="kpi-card">
+              <div class="kpi-card__label">${jb.kelompok}</div>
+              <div class="kpi-card__value">${formatRupiah(jb.realisasi)}</div>
+              <div class="kpi-card__meta">dari pagu ${formatRupiah(jb.pagu)}</div>
+              <div class="progress-track"><div class="progress-fill" style="width:${clampPercent(jb.persentase)}%"></div></div>
+            </div>`
+        )
+        .join('');
+    }
+
+    const canvas = root.querySelector('#monthly-chart');
+    if (bulanan.length) {
+      renderMonthlyAbsorptionChart(canvas, bulanan);
+    } else {
+      canvas.replaceWith(
+        Object.assign(document.createElement('div'), {
+          innerHTML: emptyState('Belum ada transaksi', 'Grafik akan tampil setelah ada realisasi bulanan.'),
+        })
+      );
+    }
+  } catch (err) {
+    root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">
+      Gagal memuat data dashboard. Silakan periksa koneksi Anda atau hubungi Administrator.
+    </div>`;
+    console.error('[SIMBMD] Dashboard error:', err.message);
+  }
+}
+
+function kpiCard(label, value, percent = null, accent = false) {
+  return `
+    <div class="kpi-card ${accent ? 'kpi-card--accent' : ''}">
+      <div class="kpi-card__label">${label}</div>
+      <div class="kpi-card__value">${value}</div>
+      ${percent !== null ? `<div class="progress-track"><div class="progress-fill" style="width:${clampPercent(percent)}%"></div></div>` : ''}
+    </div>
+  `;
+}
+
+function skeletonCard() {
+  return `<div class="kpi-card"><div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:22px;width:80%;"></div></div>`;
+}
+
+function emptyState(title, desc) {
+  return `<div class="empty-state" style="grid-column:1/-1;"><strong>${title}</strong>${desc}</div>`;
+}
