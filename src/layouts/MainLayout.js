@@ -22,10 +22,15 @@ import { renderMonitoringPajak } from '../pages/MonitoringPajak.js';
 import { renderMonitoringPemeliharaan } from '../pages/MonitoringPemeliharaan.js';
 import { renderMonitoringBbm } from '../pages/MonitoringBbm.js';
 import { renderMonitoringAnggaran } from '../pages/MonitoringAnggaran.js';
+import { renderLaporanAnggaran } from '../pages/LaporanAnggaran.js';
+import { renderLaporanKendaraan } from '../pages/LaporanKendaraan.js';
+import { renderLaporanPemeliharaan } from '../pages/LaporanPemeliharaan.js';
+import { renderLaporanPajak } from '../pages/LaporanPajak.js';
+import { renderLaporanBbm } from '../pages/LaporanBbm.js';
+import { renderLaporanTahunan } from '../pages/LaporanTahunan.js';
 import { listTahunAnggaran, getDefaultTahunAnggaran } from '../services/tahunAnggaranService.js';
 
 const PHASE_LATER_ROUTES = ['/import/master'];
-const PHASE_6_ROUTES = ['/laporan/anggaran', '/laporan/kendaraan', '/laporan/pemeliharaan', '/laporan/pajak', '/laporan/bbm', '/laporan/tahunan'];
 const PHASE_ADMIN_ROUTES = ['/admin/user', '/admin/opd', '/admin/tahun-anggaran', '/admin/audit-log', '/admin/pengaturan'];
 
 function registerPlaceholderRoutes(outlet, title, routesList, phaseLabel) {
@@ -77,6 +82,12 @@ export async function mountAppShell(root, profile) {
     registerRoute('/monitoring/pemeliharaan', (el) => renderMonitoringPemeliharaan(el, ctx()));
     registerRoute('/monitoring/bbm', (el) => renderMonitoringBbm(el, ctx()));
     registerRoute('/monitoring/anggaran', (el) => renderMonitoringAnggaran(el, ctx()));
+    registerRoute('/laporan/anggaran', (el) => renderLaporanAnggaran(el, ctx()));
+    registerRoute('/laporan/kendaraan', (el) => renderLaporanKendaraan(el, ctx()));
+    registerRoute('/laporan/pemeliharaan', (el) => renderLaporanPemeliharaan(el, ctx()));
+    registerRoute('/laporan/pajak', (el) => renderLaporanPajak(el, ctx()));
+    registerRoute('/laporan/bbm', (el) => renderLaporanBbm(el, ctx()));
+    registerRoute('/laporan/tahunan', (el) => renderLaporanTahunan(el, ctx()));
   }
 
   function drawChrome() {
@@ -95,7 +106,6 @@ export async function mountAppShell(root, profile) {
 
   registerDpaRoutes();
   registerPlaceholderRoutes(outlet, 'Import Data', PHASE_LATER_ROUTES, 'Phase 7-8');
-  registerPlaceholderRoutes(outlet, 'Laporan', PHASE_6_ROUTES, 'Phase 6');
   registerPlaceholderRoutes(outlet, 'Administrasi', PHASE_ADMIN_ROUTES, 'Phase 7-8');
 
   drawChrome();

@@ -166,8 +166,8 @@ sim-bmd/
 | 2 | DPA: kegiatan, sub kegiatan, belanja, import DPA | ✅ Selesai |
 | 3 | KIB: kendaraan, peralatan, import KIB | ✅ Selesai |
 | 4 | Transaksi: pajak, perijinan, pemeliharaan, BBM | ✅ Selesai |
-| 5 | Dashboard lanjutan: anggaran, realisasi, bulanan, per-nopol | ✅ **Dibangun sekarang** |
-| 6 | Reporting: Excel/PDF/print | ⏳ belum |
+| 5 | Dashboard lanjutan: anggaran, realisasi, bulanan, per-nopol | ✅ Selesai |
+| 6 | Reporting: Excel/PDF/print | ✅ **Dibangun sekarang** |
 | 7 | Security hardening: audit lanjutan, rate limiting login, upload validation | 🔶 fondasi RLS/audit sudah ada, hardening lanjut menyusul |
 | 8 | Deployment produksi (GitHub + Vercel + Supabase prod) | ⏳ instruksi disiapkan di README |
 
