@@ -1,5 +1,5 @@
 -- =========================================================
--- SIMBMD — seed.sql
+-- SIMPELBMD — seed.sql
 -- Data contoh/dummy (§42). HANYA untuk environment development/staging.
 -- JANGAN dijalankan di database produksi.
 -- =========================================================
@@ -21,7 +21,7 @@ on conflict (tahun) do nothing;
 
 -- ---------------------------------------------------------
 -- 3. Bootstrap user SUPER_ADMIN untuk development lokal
--- Username: superadmin   Password: SimBmd#2026 (GANTI setelah login pertama!)
+-- Username: superadmin   Password: SimpelBmd#2026 (GANTI setelah login pertama!)
 -- Trik ini hanya untuk seed LOKAL; di produksi, user dibuat lewat Edge
 -- Function `create-user` (service_role), bukan lewat SQL manual.
 -- ---------------------------------------------------------
@@ -36,7 +36,7 @@ begin
       raw_app_meta_data, raw_user_meta_data
     ) values (
       v_user_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-      'superadmin@simbmd.local', crypt('SimBmd#2026', gen_salt('bf')),
+      'superadmin@simbmd.local', crypt('SimpelBmd#2026', gen_salt('bf')),
       now(), now(), now(),
       '{"provider":"email","providers":["email"]}', '{}'
     );

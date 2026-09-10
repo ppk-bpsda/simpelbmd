@@ -1,8 +1,8 @@
 {
-  "name": "sim-bmd",
+  "name": "simpelbmd",
   "version": "0.1.0",
   "private": true,
-  "description": "SIMBMD — Sistem Informasi Monitoring Barang Milik Daerah",
+  "description": "SIMPELBMD — Sistem Informasi Monitoring Barang Milik Daerah",
   "type": "module",
   "scripts": {
     "dev": "vite",

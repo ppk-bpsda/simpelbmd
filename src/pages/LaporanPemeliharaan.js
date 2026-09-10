@@ -75,7 +75,7 @@ export async function renderLaporanPemeliharaan(root, { tahunAnggaranId }) {
     });
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Rekap Pemeliharaan.</div>`;
-    console.error('[SIMBMD] LaporanPemeliharaan error:', err.message);
+    console.error('[SIMPELBMD] LaporanPemeliharaan error:', err.message);
     return;
   }
 

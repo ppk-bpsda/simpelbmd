@@ -27,7 +27,7 @@ export async function renderLaporanTahunan(root, { tahunAnggaranId, profile }) {
     data = await getLaporanTahunan(tahunAnggaranId);
   } catch (err) {
     bodySlot.innerHTML = `<div class="alert alert--error">Gagal memuat Laporan Tahunan.</div>`;
-    console.error('[SIMBMD] LaporanTahunan error:', err.message);
+    console.error('[SIMPELBMD] LaporanTahunan error:', err.message);
     return;
   }
 

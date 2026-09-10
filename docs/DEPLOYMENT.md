@@ -1,6 +1,6 @@
-# Panduan Deployment Produksi — SIMBMD
+# Panduan Deployment Produksi — SIMPELBMD
 
-Dokumen ini adalah checklist dan prosedur untuk mempersiapkan SIMBMD ke
+Dokumen ini adalah checklist dan prosedur untuk mempersiapkan SIMPELBMD ke
 lingkungan production yang terpisah dari yang dipakai sekarang untuk
 development/testing. **Langkah-langkah yang butuh akses akun (membuat project
 Supabase baru, mengatur env var di Vercel Dashboard, dsb.) harus dilakukan

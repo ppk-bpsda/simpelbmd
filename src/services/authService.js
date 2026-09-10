@@ -51,7 +51,7 @@ export async function getCurrentProfile() {
     .single();
 
   if (error) {
-    console.error('[SIMBMD] Gagal memuat profil pengguna', error.message);
+    console.error('[SIMPELBMD] Gagal memuat profil pengguna', error.message);
     return null;
   }
   return data;
@@ -75,6 +75,6 @@ async function recordAuditEvent(action, meta = {}) {
     });
   } catch (e) {
     // Kegagalan audit tidak boleh menghentikan alur utama, cukup dicatat di konsol dev.
-    console.warn('[SIMBMD] Audit log gagal dicatat:', e.message);
+    console.warn('[SIMPELBMD] Audit log gagal dicatat:', e.message);
   }
 }

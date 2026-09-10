@@ -61,7 +61,7 @@ export async function renderLaporanKendaraan(root, { tahunAnggaranId, profile })
     }
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Rekap Kendaraan.</div>`;
-    console.error('[SIMBMD] LaporanKendaraan error:', err.message);
+    console.error('[SIMPELBMD] LaporanKendaraan error:', err.message);
     return;
   }
 

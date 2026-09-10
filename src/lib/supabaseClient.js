@@ -6,7 +6,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   // Jangan pernah membocorkan detail teknis ke UI produksi; ini hanya log konsol dev.
   console.error(
-    '[SIMBMD] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY belum diset. Salin .env.example ke .env.local.'
+    '[SIMPELBMD] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY belum diset. Salin .env.example ke .env.local.'
   );
 }
 

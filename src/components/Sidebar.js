@@ -158,7 +158,7 @@ export function renderSidebar(root, profile) {
     <aside class="sidebar">
       <div class="sidebar__brand">
         <div class="sidebar__brand-mark">S</div>
-        <div class="sidebar__brand-text">SIMBMD</div>
+        <div class="sidebar__brand-text">SIMPELBMD</div>
       </div>
       <nav class="sidebar__nav">
         ${groupsHtml}

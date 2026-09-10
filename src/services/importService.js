@@ -266,5 +266,5 @@ export async function downloadDpaTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([headerLabels, example]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Template DPA');
-  XLSX.writeFile(wb, 'Template_Import_DPA_SIMBMD.xlsx');
+  XLSX.writeFile(wb, 'Template_Import_DPA_SIMPELBMD.xlsx');
 }

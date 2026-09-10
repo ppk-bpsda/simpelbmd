@@ -103,7 +103,7 @@ export async function renderDashboardMonitoring(root, { tahunAnggaranId }) {
     }
   } catch (err) {
     root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">Gagal memuat ringkasan monitoring.</div>`;
-    console.error('[SIMBMD] DashboardMonitoring error:', err.message);
+    console.error('[SIMPELBMD] DashboardMonitoring error:', err.message);
   }
 }
 

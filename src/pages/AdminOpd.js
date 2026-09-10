@@ -72,7 +72,7 @@ export async function renderAdminOpd(root, { profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data OPD.</div>`;
-      console.error('[SIMBMD] listOpdAll error:', err.message);
+      console.error('[SIMPELBMD] listOpdAll error:', err.message);
     }
   }
 

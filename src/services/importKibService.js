@@ -309,5 +309,5 @@ export async function downloadKibTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([headerLabels, exampleKendaraan, examplePeralatan]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Template KIB');
-  XLSX.writeFile(wb, 'Template_Import_KIB_SIMBMD.xlsx');
+  XLSX.writeFile(wb, 'Template_Import_KIB_SIMPELBMD.xlsx');
 }

@@ -81,7 +81,7 @@ export async function renderMonitoringBulanan(root, { tahunAnggaranId }) {
     `;
   } catch (err) {
     root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">Gagal memuat Rekap Bulanan.</div>`;
-    console.error('[SIMBMD] MonitoringBulanan error:', err.message);
+    console.error('[SIMPELBMD] MonitoringBulanan error:', err.message);
   }
 }
 

@@ -66,7 +66,7 @@ export async function renderDashboardRealisasi(root, { tahunAnggaranId }) {
     }
   } catch (err) {
     root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">Gagal memuat data Dashboard Realisasi.</div>`;
-    console.error('[SIMBMD] DashboardRealisasi error:', err.message);
+    console.error('[SIMPELBMD] DashboardRealisasi error:', err.message);
   }
 }
 

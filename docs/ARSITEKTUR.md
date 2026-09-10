@@ -1,4 +1,4 @@
-# SIMBMD — Arsitektur Sistem
+# SIMPELBMD — Arsitektur Sistem
 
 Dokumen ini adalah rancangan yang dibuat **sebelum** implementasi kode, sesuai permintaan: arsitektur, ERD, skema database, matriks role & permission, strategi RLS, struktur folder, dan roadmap pengembangan.
 
@@ -24,7 +24,7 @@ Dokumen ini adalah rancangan yang dibuat **sebelum** implementasi kode, sesuai p
 │  └───────────────┘ └───────────────┘ └────────────────────┘   │
 └──────────────────────────────────────────────────────────────┘
                              │
-                        GitHub (sim-bmd) ──▶ Vercel (build & deploy)
+                        GitHub (simpelbmd) ──▶ Vercel (build & deploy)
 ```
 
 Prinsip kunci:
@@ -113,7 +113,7 @@ Catatan: OPERATOR **tidak dapat menghapus** (delete diarahkan ke soft delete dan
 ## 6. Struktur Folder
 
 ```
-sim-bmd/
+simpelbmd/
 ├── index.html
 ├── package.json
 ├── vite.config.js

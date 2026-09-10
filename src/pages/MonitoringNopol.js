@@ -68,7 +68,7 @@ async function renderList(root, { tahunAnggaranId }) {
     });
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat Rekap per Kendaraan.</div>`;
-    console.error('[SIMBMD] MonitoringNopol list error:', err.message);
+    console.error('[SIMPELBMD] MonitoringNopol list error:', err.message);
   }
 }
 
@@ -131,7 +131,7 @@ async function renderDetail(root, { tahunAnggaranId, kendaraanId }) {
     drawBbmTable(root.querySelector('#bbm-slot'), bbmRows);
   } catch (err) {
     root.querySelector('#identitas-slot').innerHTML = `<div class="alert alert--error">Gagal memuat detail kendaraan.</div>`;
-    console.error('[SIMBMD] MonitoringNopol detail error:', err.message);
+    console.error('[SIMPELBMD] MonitoringNopol detail error:', err.message);
   }
 }
 

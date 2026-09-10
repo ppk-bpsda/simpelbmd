@@ -88,7 +88,7 @@ export async function renderLaporanPajak(root, { tahunAnggaranId }) {
     });
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Rekap Pajak.</div>`;
-    console.error('[SIMBMD] LaporanPajak error:', err.message);
+    console.error('[SIMPELBMD] LaporanPajak error:', err.message);
     return;
   }
 

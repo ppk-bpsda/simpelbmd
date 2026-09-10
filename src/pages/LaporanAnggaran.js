@@ -64,7 +64,7 @@ export async function renderLaporanAnggaran(root, { tahunAnggaranId }) {
     });
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Rekap Anggaran.</div>`;
-    console.error('[SIMBMD] LaporanAnggaran error:', err.message);
+    console.error('[SIMPELBMD] LaporanAnggaran error:', err.message);
     return;
   }
 

@@ -89,7 +89,7 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Pajak/Perijinan.</div>`;
-      console.error('[SIMBMD] listPajak error:', err.message);
+      console.error('[SIMPELBMD] listPajak error:', err.message);
     }
   }
 

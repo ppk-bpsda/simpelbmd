@@ -23,7 +23,7 @@ export async function renderDataQuality(root, { tahunAnggaranId }) {
     issues = await runDataQualityChecks(tahunAnggaranId);
   } catch (err) {
     bodySlot.innerHTML = `<div class="alert alert--error">Gagal menjalankan pemeriksaan Data Quality.</div>`;
-    console.error('[SIMBMD] DataQuality error:', err.message);
+    console.error('[SIMPELBMD] DataQuality error:', err.message);
     return;
   }
 

@@ -83,7 +83,7 @@ export async function renderAdminTahunAnggaran(root, { profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Tahun Anggaran.</div>`;
-      console.error('[SIMBMD] listTahunAnggaran error:', err.message);
+      console.error('[SIMPELBMD] listTahunAnggaran error:', err.message);
     }
   }
 

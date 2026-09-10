@@ -1,5 +1,5 @@
 -- =========================================================
--- SIMBMD — 0004_phase5_views.sql
+-- SIMPELBMD — 0004_phase5_views.sql
 -- View tambahan untuk Dashboard & Monitoring lanjutan (§14-17, §26).
 -- Semua perhitungan tetap di database, bukan di frontend.
 -- =========================================================

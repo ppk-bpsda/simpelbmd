@@ -86,7 +86,7 @@ export async function renderAdminAuditLog(root, { profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat Audit Log.</div>`;
-      console.error('[SIMBMD] AdminAuditLog error:', err.message);
+      console.error('[SIMPELBMD] AdminAuditLog error:', err.message);
       return;
     }
     draw();

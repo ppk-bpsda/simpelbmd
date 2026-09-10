@@ -6,7 +6,7 @@ export function renderLogin(root, onSuccess) {
       <div class="login-screen__brand">
         <div class="login-screen__logo">
           <div class="login-screen__logo-mark">S</div>
-          <div class="login-screen__logo-text">SIMBMD</div>
+          <div class="login-screen__logo-text">SIMPELBMD</div>
         </div>
         <h1 class="login-screen__headline">
           Satu sistem untuk memantau anggaran, aset, dan kendaraan daerah secara akurat dan auditable.
@@ -18,7 +18,7 @@ export function renderLogin(root, onSuccess) {
       </div>
       <div class="login-screen__form-side">
         <div class="login-card">
-          <h1>Masuk ke SIMBMD</h1>
+          <h1>Masuk ke SIMPELBMD</h1>
           <p class="subtitle">Gunakan username dan kata sandi yang terdaftar pada OPD Anda.</p>
           <div id="login-alert-slot"></div>
           <form id="login-form" novalidate>

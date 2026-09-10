@@ -1,4 +1,4 @@
-# SIMBMD — Sistem Informasi Monitoring Barang Milik Daerah
+# SIMPELBMD — Sistem Informasi Monitoring Barang Milik Daerah
 
 Monitoring Anggaran • KIB • Pajak/Perijinan • Pemeliharaan • BBM
 
@@ -67,7 +67,7 @@ npm run build
 
 ## Deployment
 
-- **GitHub**: push folder ini sebagai repo `sim-bmd`, branch `main` + `development`.
+- **GitHub**: push folder ini sebagai repo `simpelbmd`, branch `main` + `development`.
 - **Vercel**: import repo, set environment variables `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di Vercel project settings (jangan pernah menaruh `SUPABASE_SERVICE_ROLE_KEY` di Vercel env yang exposed ke frontend build).
 - **Supabase**: gunakan project terpisah untuk production; jalankan migration yang sama.
 
@@ -93,7 +93,7 @@ npm run build
 ## Struktur folder
 
 ```
-sim-bmd/
+simpelbmd/
 ├── index.html
 ├── package.json
 ├── vite.config.js

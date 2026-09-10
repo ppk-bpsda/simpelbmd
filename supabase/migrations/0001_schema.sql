@@ -1,5 +1,5 @@
 -- =========================================================
--- SIMBMD — 0001_schema.sql
+-- SIMPELBMD — 0001_schema.sql
 -- Skema inti dibangun lengkap dari awal (mencakup kebutuhan
 -- Phase 1-8) agar modul berikutnya tidak memerlukan perubahan
 -- struktural besar. Lihat docs/ARSITEKTUR.md untuk ERD.

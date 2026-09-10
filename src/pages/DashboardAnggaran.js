@@ -60,7 +60,7 @@ export async function renderDashboardAnggaran(root, { tahunAnggaranId }) {
     `;
   } catch (err) {
     root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">Gagal memuat data Dashboard Anggaran.</div>`;
-    console.error('[SIMBMD] DashboardAnggaran error:', err.message);
+    console.error('[SIMPELBMD] DashboardAnggaran error:', err.message);
   }
 }
 

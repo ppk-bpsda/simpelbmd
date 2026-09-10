@@ -82,7 +82,7 @@ export async function renderDashboard(root, { tahunAnggaranId }) {
     root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">
       Gagal memuat data dashboard. Silakan periksa koneksi Anda atau hubungi Administrator.
     </div>`;
-    console.error('[SIMBMD] Dashboard error:', err.message);
+    console.error('[SIMPELBMD] Dashboard error:', err.message);
   }
 }
 

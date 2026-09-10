@@ -1,5 +1,5 @@
 -- =========================================================
--- SIMBMD — 0003_storage_policies.sql
+-- SIMPELBMD — 0003_storage_policies.sql
 -- Bucket dokumen bersifat PRIVATE. Akses baca menggunakan
 -- signed URL yang dibuat dari sisi client setelah RLS pada
 -- tabel `dokumen` memverifikasi kepemilikan OPD (§23-24).

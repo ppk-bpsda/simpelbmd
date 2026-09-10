@@ -96,7 +96,7 @@ export async function renderKegiatan(root, { tahunAnggaranId, profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Kegiatan. Silakan coba lagi.</div>`;
-      console.error('[SIMBMD] listKegiatan error:', err.message);
+      console.error('[SIMPELBMD] listKegiatan error:', err.message);
     }
   }
 

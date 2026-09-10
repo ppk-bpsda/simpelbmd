@@ -57,7 +57,7 @@ export async function renderMonitoringAnggaran(root, { tahunAnggaranId }) {
     });
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Monitoring Anggaran.</div>`;
-    console.error('[SIMBMD] MonitoringAnggaran error:', err.message);
+    console.error('[SIMPELBMD] MonitoringAnggaran error:', err.message);
     return;
   }
 

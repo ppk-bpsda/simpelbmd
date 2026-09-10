@@ -1,5 +1,5 @@
 -- =========================================================
--- SIMBMD — 0002_rls_policies.sql
+-- SIMPELBMD — 0002_rls_policies.sql
 -- Helper functions (SECURITY DEFINER) + RLS untuk semua tabel.
 -- Prinsip: otorisasi ditegakkan di database, bukan hanya frontend (§20).
 -- =========================================================

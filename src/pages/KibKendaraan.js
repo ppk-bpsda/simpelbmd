@@ -93,7 +93,7 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Kendaraan.</div>`;
-      console.error('[SIMBMD] listKendaraan error:', err.message);
+      console.error('[SIMPELBMD] listKendaraan error:', err.message);
     }
   }
 

@@ -71,7 +71,7 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
     });
   } catch (err) {
     tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Rekap BBM.</div>`;
-    console.error('[SIMBMD] LaporanBbm error:', err.message);
+    console.error('[SIMPELBMD] LaporanBbm error:', err.message);
     return;
   }
 

@@ -89,7 +89,7 @@ export async function renderAdminUser(root, { profile }) {
       });
     } catch (err) {
       tableSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data User.</div>`;
-      console.error('[SIMBMD] AdminUser listUsers error:', err.message);
+      console.error('[SIMPELBMD] AdminUser listUsers error:', err.message);
     }
   }
 
