@@ -18,24 +18,8 @@ function usernameToInternalEmail(username) {
 }
 
 export async function login(username, password) {
-  const normalizedUsername = String(username).trim().toLowerCase();
-
-  const { data: lockedUntil, error: lockCheckErr } = await supabase.rpc('is_account_locked', {
-    p_username: normalizedUsername,
-  });
-  if (!lockCheckErr && lockedUntil) {
-    const minutesLeft = Math.max(1, Math.ceil((new Date(lockedUntil) - new Date()) / 60000));
-    throw new Error(
-      `Akun ini dikunci sementara karena terlalu banyak percobaan gagal. Coba lagi dalam ${minutesLeft} menit.`
-    );
-  }
-
-  const email = usernameToInternalEmail(normalizedUsername);
+  const email = usernameToInternalEmail(username);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-  // Catat hasil percobaan (RPC ini juga yang menerapkan lockout setelah 5x gagal).
-  await supabase.rpc('record_login_attempt', { p_username: normalizedUsername, p_success: !error }).catch(() => {});
-
   if (error) {
     // Pesan generik: jangan bocorkan apakah username ada atau tidak (mitigasi enumeration).
     throw new Error('Username atau kata sandi salah, atau akun sedang tidak aktif.');
@@ -71,11 +55,6 @@ export async function getCurrentProfile() {
     return null;
   }
   return data;
-}
-
-export async function changePassword(newPassword) {
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) throw new Error('Gagal mengganti kata sandi. Pastikan kata sandi baru memenuhi ketentuan minimal.');
 }
 
 export function onAuthStateChange(callback) {

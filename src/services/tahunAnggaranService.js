@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
+import { translateDbError } from './anggaranService.js';
 
 export async function listTahunAnggaran() {
   const { data, error } = await supabase
@@ -15,21 +16,42 @@ export async function getDefaultTahunAnggaran() {
   return list.find((t) => t.status_aktif) || list[0] || null;
 }
 
-export async function createTahunAnggaran(tahun) {
-  const { data, error } = await supabase.from('tahun_anggaran').insert({ tahun }).select().single();
-  if (error) {
-    if (error.code === '23505') throw new Error('Tahun Anggaran tersebut sudah ada.');
-    throw new Error('Gagal menambahkan Tahun Anggaran.');
-  }
-  return data;
+export async function createTahunAnggaran({ tahun }) {
+  const { error } = await supabase.from('tahun_anggaran').insert({ tahun: Number(tahun) });
+  if (error) throw translateDbError(error);
 }
 
-/**
- * Mengaktifkan satu Tahun Anggaran secara atomik lewat RPC (menghindari
- * race condition terhadap constraint "hanya satu TA aktif" — lihat
- * migration 0005_security_hardening.sql).
- */
-export async function setTahunAnggaranAktif(id) {
-  const { error } = await supabase.rpc('set_tahun_anggaran_aktif', { p_id: id });
-  if (error) throw new Error('Gagal mengubah Tahun Anggaran aktif. Pastikan Anda memiliki akses Super Admin.');
+export async function softDeleteTahunAnggaran(id, userId) {
+  const { error } = await supabase
+    .from('tahun_anggaran')
+    .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+    .eq('id', id);
+  if (error) throw translateDbError(error);
+}
+
+// Hanya boleh ada SATU Tahun Anggaran aktif (unique partial index di DB).
+// Urutan wajib: matikan yang lama dulu, baru aktifkan yang baru — supaya
+// tidak pernah ada dua baris status_aktif=true di waktu yang sama.
+export async function setActiveTahunAnggaran(id) {
+  const { data: current, error: fetchErr } = await supabase
+    .from('tahun_anggaran')
+    .select('id')
+    .eq('status_aktif', true)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (fetchErr) throw translateDbError(fetchErr);
+
+  if (current && current.id !== id) {
+    const { error: offErr } = await supabase
+      .from('tahun_anggaran')
+      .update({ status_aktif: false })
+      .eq('id', current.id);
+    if (offErr) throw translateDbError(offErr);
+  }
+
+  const { error: onErr } = await supabase
+    .from('tahun_anggaran')
+    .update({ status_aktif: true })
+    .eq('id', id);
+  if (onErr) throw translateDbError(onErr);
 }

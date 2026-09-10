@@ -80,20 +80,19 @@ const MENU = [
     group: 'Administrasi',
     icon: ICONS.admin,
     items: [
-      { label: 'Data Quality Center', path: '/admin/data-quality' },
-      { label: 'User', path: '/admin/user', roles: ['super_admin'] },
-      { label: 'OPD', path: '/admin/opd', roles: ['super_admin'] },
-      { label: 'Tahun Anggaran', path: '/admin/tahun-anggaran', roles: ['super_admin'] },
+      { label: 'User', path: '/admin/user' },
+      { label: 'OPD', path: '/admin/opd' },
+      { label: 'Tahun Anggaran', path: '/admin/tahun-anggaran' },
       { label: 'Audit Log', path: '/admin/audit-log' },
+      { label: 'Data Quality Center', path: '/admin/data-quality' },
       { label: 'Pengaturan', path: '/admin/pengaturan' },
     ],
   },
 ];
 
-// Item tertentu (mis. User, OPD, Tahun Anggaran) dibatasi lewat field
-// `roles` per item di MENU di atas — bukan lagi blanket-hide satu grup,
-// supaya Audit Log & Pengaturan tetap bisa diakses semua role (RLS di
-// database tetap jadi lapisan penegakan yang sebenarnya).
+// Menu yang dibatasi per role (di luar ini akan disaring oleh RLS juga di sisi DB,
+// tapi kita sembunyikan di UI agar tidak membingungkan user).
+const ADMIN_ONLY_GROUPS = new Set(['Administrasi']);
 
 // State accordion disimpan di level modul supaya tetap terbuka saat navigasi
 // (Sidebar di-render ulang tiap hashchange DAN tiap toggle grup, tapi modul ini
@@ -109,7 +108,7 @@ function findGroupKeyByPath(path) {
 
 export function renderSidebar(root, profile) {
   const active = currentPath();
-  const role = profile?.role;
+  const isAdmin = profile?.role === 'super_admin';
 
   if (!initialized) {
     // Render pertama kali: buka grup yang berisi halaman aktif.
@@ -125,9 +124,7 @@ export function renderSidebar(root, profile) {
   // toggle accordion sendiri -> expandedKey (yang sudah di-set oleh handler klik)
   // TIDAK boleh ditimpa di sini.
 
-  const visibleGroups = MENU
-    .map((g) => ({ ...g, items: g.items.filter((i) => !i.roles || i.roles.includes(role)) }))
-    .filter((g) => g.items.length > 0);
+  const visibleGroups = MENU.filter((g) => !ADMIN_ONLY_GROUPS.has(g.group) || isAdmin);
 
   const groupsHtml = visibleGroups
     .map((group) => {

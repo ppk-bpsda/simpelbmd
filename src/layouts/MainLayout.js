@@ -28,15 +28,15 @@ import { renderLaporanPemeliharaan } from '../pages/LaporanPemeliharaan.js';
 import { renderLaporanPajak } from '../pages/LaporanPajak.js';
 import { renderLaporanBbm } from '../pages/LaporanBbm.js';
 import { renderLaporanTahunan } from '../pages/LaporanTahunan.js';
-import { renderDataQuality } from '../pages/DataQuality.js';
 import { renderAdminUser } from '../pages/AdminUser.js';
 import { renderAdminOpd } from '../pages/AdminOpd.js';
 import { renderAdminTahunAnggaran } from '../pages/AdminTahunAnggaran.js';
 import { renderAdminAuditLog } from '../pages/AdminAuditLog.js';
-import { renderAdminPengaturan } from '../pages/AdminPengaturan.js';
+import { renderDataQuality } from '../pages/DataQuality.js';
 import { listTahunAnggaran, getDefaultTahunAnggaran } from '../services/tahunAnggaranService.js';
 
 const PHASE_LATER_ROUTES = ['/import/master'];
+const PHASE_SETTINGS_ROUTES = ['/admin/pengaturan'];
 
 function registerPlaceholderRoutes(outlet, title, routesList, phaseLabel) {
   routesList.forEach((path) => {
@@ -93,12 +93,11 @@ export async function mountAppShell(root, profile) {
     registerRoute('/laporan/pajak', (el) => renderLaporanPajak(el, ctx()));
     registerRoute('/laporan/bbm', (el) => renderLaporanBbm(el, ctx()));
     registerRoute('/laporan/tahunan', (el) => renderLaporanTahunan(el, ctx()));
-    registerRoute('/admin/data-quality', (el) => renderDataQuality(el, ctx()));
     registerRoute('/admin/user', (el) => renderAdminUser(el, ctx()));
     registerRoute('/admin/opd', (el) => renderAdminOpd(el, ctx()));
     registerRoute('/admin/tahun-anggaran', (el) => renderAdminTahunAnggaran(el, ctx()));
     registerRoute('/admin/audit-log', (el) => renderAdminAuditLog(el, ctx()));
-    registerRoute('/admin/pengaturan', (el) => renderAdminPengaturan(el, ctx()));
+    registerRoute('/admin/data-quality', (el) => renderDataQuality(el, ctx()));
   }
 
   function drawChrome() {
@@ -116,7 +115,8 @@ export async function mountAppShell(root, profile) {
   }
 
   registerDpaRoutes();
-  registerPlaceholderRoutes(outlet, 'Import Data', PHASE_LATER_ROUTES, 'Phase 8');
+  registerPlaceholderRoutes(outlet, 'Import Data', PHASE_LATER_ROUTES, 'Phase 7-8');
+  registerPlaceholderRoutes(outlet, 'Administrasi', PHASE_SETTINGS_ROUTES, 'Belum dijadwalkan');
 
   drawChrome();
 

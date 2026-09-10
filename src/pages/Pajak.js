@@ -1,7 +1,6 @@
 import { listPajak, createPajak, updatePajak, softDeletePajak, listKendaraanOptions } from '../services/transaksiService.js';
 import { computeJatuhTempoStatus, JENIS_PAJAK_OPTIONS } from '../validators/transaksiValidator.js';
 import { mountBelanjaPicker } from '../components/BelanjaPicker.js';
-import { mountFileUpload } from '../components/FileUpload.js';
 import { formatRupiah } from '../utils/format.js';
 import { showToast, confirmDialog } from '../utils/ui.js';
 
@@ -129,7 +128,6 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
         <div class="field"><label>Sumber Anggaran</label><input id="f-sumber" value="${escapeAttr(existing?.sumber_anggaran) || 'APBD'}" /></div>
         <div id="belanja-picker-slot" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;"></div>
         <div class="field" style="grid-column:1/-1;"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
-        ${existing ? `<div class="field" style="grid-column:1/-1;"><label>Bukti Pembayaran</label><div id="doc-upload-slot"></div></div>` : `<div class="alert alert--info" style="grid-column:1/-1;">Simpan transaksi terlebih dahulu, lalu buka kembali untuk melampirkan Bukti Pembayaran.</div>`}
         <div class="field-actions">
           <button class="btn btn-solid" id="f-save">${existing ? 'Simpan Perubahan' : 'Simpan'}</button>
           <button class="btn btn-outline" id="f-cancel">Batal</button>
@@ -140,17 +138,6 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
     const picker = await mountBelanjaPicker(formSlot.querySelector('#belanja-picker-slot'), {
       tahunAnggaranId, kelompok: 'pajak_perijinan', selectedBelanjaId: existing?.belanja?.id || null,
     });
-
-    if (existing) {
-      const selectedKendaraan = kendaraanOptions.find((k) => k.id === existing.kendaraan?.id);
-      await mountFileUpload(formSlot.querySelector('#doc-upload-slot'), {
-        opdId: selectedKendaraan?.kib?.opd_id || profile.opd_id,
-        tableName: 'pajak_perijinan',
-        recordId: existing.id,
-        uploadedBy: profile.id,
-        canWrite,
-      });
-    }
 
     formSlot.querySelector('#f-cancel').addEventListener('click', () => { formSlot.innerHTML = ''; });
     formSlot.querySelector('#f-save').addEventListener('click', async () => {

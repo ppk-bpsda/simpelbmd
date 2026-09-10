@@ -317,6 +317,19 @@ button { font-family: inherit; }
 .btn-danger-ghost { background: none; border: none; color: var(--status-critical); padding: 6px 8px; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+.field select {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200); font-size: 13.5px; background: var(--white); color: var(--gray-700);
+}
+.field select:focus { outline: none; border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+
+.report-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 18px; padding-top: 16px; border-top: 1px dashed var(--gray-200); }
+
+.report-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.report-summary__card { background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 14px 16px; }
+.report-summary__label { font-size: 11.5px; color: var(--gray-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+.report-summary__value { font-size: 19px; font-weight: 700; color: var(--gray-900); }
+
 .data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .data-table thead th {
   text-align: left; padding: 10px 12px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;
@@ -357,19 +370,6 @@ button { font-family: inherit; }
 .summary-chip { padding: 14px; border-radius: var(--radius-md); text-align: center; }
 .summary-chip__value { font-size: 22px; font-weight: 700; }
 .summary-chip__label { font-size: 11.5px; color: var(--gray-500); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
-
-.doc-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
-.doc-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--gray-50); border-radius: var(--radius-sm); font-size: 13px; }
-.doc-item__actions { display: flex; gap: 4px; }
-
-@media print {
-  .sidebar, .topbar, .toolbar__actions, .stepper-nav, .breadcrumb, #btn-export-print { display: none !important; }
-  .shell { display: block !important; }
-  .content { padding: 0 !important; max-width: none !important; }
-  body { background: var(--white) !important; }
-  .panel { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 16px !important; }
-  .data-table thead th { background: var(--gray-100) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-}
 
 @media (max-width: 1024px) {
   .shell { grid-template-columns: 76px 1fr; }

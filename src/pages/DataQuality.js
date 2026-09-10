@@ -1,6 +1,4 @@
 import { runDataQualityChecks } from '../services/dataQualityService.js';
-import { formatRupiah, formatPercent } from '../utils/format.js';
-import { navigate } from '../router.js';
 
 export async function renderDataQuality(root, { tahunAnggaranId }) {
   if (!tahunAnggaranId) {
@@ -12,95 +10,65 @@ export async function renderDataQuality(root, { tahunAnggaranId }) {
     <div class="toolbar">
       <div>
         <div class="toolbar__title">Data Quality Center</div>
-        <div class="toolbar__subtitle">Pemeriksaan otomatis terhadap konsistensi dan kelengkapan data</div>
+        <div class="toolbar__subtitle">Pemeriksaan otomatis kelengkapan &amp; kewajaran data — murni baca (read-only), tidak mengubah data apa pun</div>
       </div>
     </div>
-    <div class="kpi-grid" id="kpi-slot" style="margin-bottom:16px;">${skeletonCards()}</div>
-    <div id="sections-slot"></div>
+    <div class="panel"><div id="body-slot"><div class="skeleton" style="height:18px;margin-bottom:10px;"></div></div></div>
   `;
 
+  const bodySlot = root.querySelector('#body-slot');
+
+  let issues = [];
   try {
-    const result = await runDataQualityChecks(tahunAnggaranId);
-    const totalIssues =
-      result.belanjaTanpaPagu.length + result.realisasiMelebihiPagu.length +
-      result.kendaraanTidakLengkap.length + result.kibTanpaDetail.length + result.pajakKedaluwarsa.length;
-
-    root.querySelector('#kpi-slot').innerHTML = `
-      <div class="kpi-card" style="border-left:3px solid ${totalIssues > 0 ? 'var(--status-critical)' : 'var(--status-safe)'};">
-        <div class="kpi-card__label">Total Peringatan</div>
-        <div class="kpi-card__value" style="color:${totalIssues > 0 ? 'var(--status-critical)' : 'var(--status-safe)'};">${totalIssues}</div>
-      </div>
-      <div class="kpi-card"><div class="kpi-card__label">Belanja Tanpa Pagu</div><div class="kpi-card__value">${result.belanjaTanpaPagu.length}</div></div>
-      <div class="kpi-card"><div class="kpi-card__label">Realisasi Melebihi Pagu</div><div class="kpi-card__value">${result.realisasiMelebihiPagu.length}</div></div>
-      <div class="kpi-card"><div class="kpi-card__label">Pajak Kedaluwarsa</div><div class="kpi-card__value">${result.pajakKedaluwarsa.length}</div></div>
-    `;
-
-    const sections = root.querySelector('#sections-slot');
-    sections.innerHTML = `
-      ${section(
-        'Belanja Tanpa Pagu (Pagu = 0)',
-        'DPA kemungkinan belum lengkap diinput untuk rincian belanja berikut.',
-        result.belanjaTanpaPagu,
-        (b) => `<td>${escapeHtml(b.sub_kegiatan.kegiatan.nama_kegiatan)}</td><td>${escapeHtml(b.kode_rekening)} — ${escapeHtml(b.nama_belanja)}</td>`,
-        ['Kegiatan', 'Belanja']
-      )}
-      ${section(
-        'Realisasi Melebihi Pagu',
-        'Rincian belanja berikut sudah terealisasi melebihi 100% dari Pagu yang tersedia.',
-        result.realisasiMelebihiPagu,
-        (b) => `<td>${escapeHtml(b.nama_belanja)}</td><td class="num">${formatRupiah(b.pagu)}</td><td class="num">${formatRupiah(b.realisasi)}</td><td class="num">${formatPercent((b.realisasi / b.pagu) * 100)}</td>`,
-        ['Belanja', 'Pagu', 'Realisasi', '%']
-      )}
-      ${section(
-        'Kendaraan dengan Data Tidak Lengkap',
-        'Nomor Rangka atau Nomor Mesin belum diisi — lengkapi lewat menu KIB Kendaraan.',
-        result.kendaraanTidakLengkap,
-        (k) => `<td style="font-weight:700;color:var(--blue-600);cursor:pointer;" data-nav="/kib/kendaraan">${escapeHtml(k.nopol)}</td><td>${escapeHtml(k.kib?.nama_barang || '-')}</td><td>${k.nomor_rangka || '<span style="color:var(--status-critical);">kosong</span>'}</td><td>${k.nomor_mesin || '<span style="color:var(--status-critical);">kosong</span>'}</td>`,
-        ['Nopol', 'Nama Barang', 'Nomor Rangka', 'Nomor Mesin']
-      )}
-      ${section(
-        'KIB Kendaraan Tanpa Detail',
-        'Data KIB berkategori Kendaraan namun tidak memiliki data identitas kendaraan (Nopol, dst).',
-        result.kibTanpaDetail,
-        (k) => `<td>${escapeHtml(k.nama_barang)}</td><td>${escapeHtml(k.register || '-')}</td>`,
-        ['Nama Barang', 'Register']
-      )}
-      ${section(
-        'Pajak/Perijinan Kedaluwarsa',
-        'Transaksi berikut sudah melewati Masa Berlaku dan perlu segera diperbarui.',
-        result.pajakKedaluwarsa,
-        (p) => `<td style="font-weight:700;color:var(--blue-600);cursor:pointer;" data-nav="/kendaraan/pajak">${escapeHtml(p.kendaraan?.nopol || '-')}</td><td>${escapeHtml(p.jenis)}</td><td>${p.masa_berlaku ? new Date(p.masa_berlaku).toLocaleDateString('id-ID') : '-'}</td>`,
-        ['Nopol', 'Jenis', 'Masa Berlaku']
-      )}
-    `;
-
-    sections.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.nav)));
+    issues = await runDataQualityChecks(tahunAnggaranId);
   } catch (err) {
-    root.querySelector('#kpi-slot').innerHTML = `<div class="alert alert--error" style="grid-column:1/-1;">Gagal menjalankan pemeriksaan Data Quality.</div>`;
+    bodySlot.innerHTML = `<div class="alert alert--error">Gagal menjalankan pemeriksaan Data Quality.</div>`;
     console.error('[SIMBMD] DataQuality error:', err.message);
+    return;
   }
-}
 
-function section(title, desc, rows, rowRenderer, columns) {
-  return `
-    <div class="panel">
-      <div class="panel__header">
-        <div>
-          <div class="panel__title">${title} ${rows.length ? `<span class="status-badge status-badge--critical" style="margin-left:6px;">${rows.length}</span>` : `<span class="status-badge status-badge--safe" style="margin-left:6px;">Aman</span>`}</div>
-          <div class="panel__subtitle">${desc}</div>
+  const totalItems = issues.reduce((s, g) => s + g.items.length, 0);
+  const criticalCount = issues.filter((g) => g.severity === 'critical').reduce((s, g) => s + g.items.length, 0);
+  const warningCount = totalItems - criticalCount;
+
+  if (!issues.length) {
+    bodySlot.innerHTML = `
+      <div class="report-summary" style="margin-bottom:0;">
+        <div class="report-summary__card"><div class="report-summary__label">Status</div><div class="report-summary__value" style="color:var(--green-600, #16A34A);">Bersih ✓</div></div>
+      </div>
+      <div class="empty-state" style="margin-top:20px;"><strong>Tidak ditemukan masalah</strong>Seluruh pemeriksaan data yang tersedia saat ini tidak menemukan kejanggalan.</div>
+    `;
+    return;
+  }
+
+  bodySlot.innerHTML = `
+    <div class="report-summary">
+      <div class="report-summary__card"><div class="report-summary__label">Total Temuan</div><div class="report-summary__value">${totalItems}</div></div>
+      <div class="report-summary__card"><div class="report-summary__label">Kritis</div><div class="report-summary__value" style="color:#DC2626;">${criticalCount}</div></div>
+      <div class="report-summary__card"><div class="report-summary__label">Perlu Perhatian</div><div class="report-summary__value" style="color:#D97706;">${warningCount}</div></div>
+      <div class="report-summary__card"><div class="report-summary__label">Kategori Pemeriksaan</div><div class="report-summary__value">${issues.length}</div></div>
+    </div>
+
+    ${issues.map((group) => `
+      <div style="margin-top:24px;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:${group.severity === 'critical' ? '#FEF2F2' : '#FFFBEB'};">
+          <span class="status-badge status-badge--${group.severity === 'critical' ? 'critical' : 'warning'}">${group.items.length}</span>
+          <div>
+            <div style="font-weight:700;font-size:13.5px;color:var(--gray-900);">${escapeHtml(group.title)}</div>
+            <div style="font-size:12px;color:var(--gray-500);">${escapeHtml(group.description)}</div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <tbody>
+              ${group.items.slice(0, 50).map((it) => `<tr><td style="font-weight:600;width:32%;">${escapeHtml(it.label)}</td><td style="color:var(--gray-500);">${escapeHtml(it.detail || '')}</td></tr>`).join('')}
+            </tbody>
+          </table>
+          ${group.items.length > 50 ? `<div style="padding:10px 18px;font-size:12px;color:var(--gray-500);">…dan ${group.items.length - 50} lainnya.</div>` : ''}
         </div>
       </div>
-      ${rows.length === 0
-        ? `<div class="empty-state"><strong>Tidak ada masalah ditemukan</strong></div>`
-        : `<div class="table-scroll"><table class="data-table">
-            <thead><tr>${columns.map((c) => `<th>${c}</th>`).join('')}</tr></thead>
-            <tbody>${rows.slice(0, 50).map((r) => `<tr>${rowRenderer(r)}</tr>`).join('')}</tbody>
-          </table></div>
-          ${rows.length > 50 ? `<p style="font-size:12px;color:var(--gray-500);margin-top:8px;">Menampilkan 50 dari ${rows.length} temuan.</p>` : ''}`
-      }
-    </div>
+    `).join('')}
   `;
 }
 
-function skeletonCards() { return Array.from({ length: 4 }).map(() => `<div class="kpi-card"><div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:22px;width:80%;"></div></div>`).join(''); }
 function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }

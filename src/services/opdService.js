@@ -12,10 +12,12 @@ export async function listOpd() {
   return data;
 }
 
-export async function listAllOpd() {
+// Dipakai halaman Administrasi > OPD — menampilkan semua OPD (termasuk nonaktif),
+// beda dari listOpd() di atas yang dipakai dropdown (hanya OPD aktif).
+export async function listOpdAll() {
   const { data, error } = await supabase
     .from('opd')
-    .select('id, kode_opd, nama_opd, status')
+    .select('id, kode_opd, nama_opd, status, created_at')
     .is('deleted_at', null)
     .order('nama_opd');
   if (error) throw error;
@@ -23,18 +25,21 @@ export async function listAllOpd() {
 }
 
 export async function createOpd({ kode, nama }) {
-  const { data, error } = await supabase.from('opd').insert({ kode_opd: kode, nama_opd: nama }).select().single();
+  const { error } = await supabase.from('opd').insert({ kode_opd: kode, nama_opd: nama });
   if (error) throw translateDbError(error);
-  return data;
 }
 
 export async function updateOpd(id, { kode, nama, status }) {
-  const { data, error } = await supabase
-    .from('opd')
-    .update({ kode_opd: kode, nama_opd: nama, status })
-    .eq('id', id)
-    .select()
-    .single();
+  const payload = { kode_opd: kode, nama_opd: nama };
+  if (status) payload.status = status;
+  const { error } = await supabase.from('opd').update(payload).eq('id', id);
   if (error) throw translateDbError(error);
-  return data;
+}
+
+export async function softDeleteOpd(id, userId) {
+  const { error } = await supabase
+    .from('opd')
+    .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+    .eq('id', id);
+  if (error) throw translateDbError(error);
 }
