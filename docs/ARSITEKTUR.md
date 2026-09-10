@@ -167,8 +167,8 @@ sim-bmd/
 | 3 | KIB: kendaraan, peralatan, import KIB | ✅ Selesai |
 | 4 | Transaksi: pajak, perijinan, pemeliharaan, BBM | ✅ Selesai |
 | 5 | Dashboard lanjutan: anggaran, realisasi, bulanan, per-nopol | ✅ Selesai |
-| 6 | Reporting: Excel/PDF/print | ✅ **Dibangun sekarang** |
-| 7 | Security hardening: audit lanjutan, rate limiting login, upload validation | 🔶 fondasi RLS/audit sudah ada, hardening lanjut menyusul |
-| 8 | Deployment produksi (GitHub + Vercel + Supabase prod) | ⏳ instruksi disiapkan di README |
+| 6 | Reporting: Excel/PDF/print | ✅ Selesai |
+| 7 | Security hardening: audit lanjutan, rate limiting login, upload validation | ✅ **Dibangun sekarang** |
+| 8 | Deployment produksi (GitHub + Vercel + Supabase prod) | ✅ **Dibangun sekarang** (CI build check + panduan lengkap) |
 
 Skema database (migration) sengaja dibuat **lengkap dari awal** (mencakup kebutuhan Phase 1–8) sesuai instruksi, supaya modul berikutnya tidak memerlukan perubahan struktural besar.
