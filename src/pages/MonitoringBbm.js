@@ -1,8 +1,10 @@
 import { listBbm } from '../services/transaksiService.js';
-import { JENIS_BBM_OPTIONS, RODA_LABEL } from '../validators/transaksiValidator.js';
+import { listPenyerapanKupon } from '../services/kuponBbmService.js';
+import { JENIS_BBM_OPTIONS, RODA_LABEL, KUPON_NOMINAL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 
 const BULAN_LABEL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const RODA_ORDER = ['roda4', 'roda2'];
 
 export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
   if (!tahunAnggaranId) {
@@ -16,6 +18,10 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
         <div class="toolbar__title">Monitoring BBM</div>
         <div class="toolbar__subtitle">Tampilan pemantauan (read-only) — untuk mengedit, gunakan menu Kendaraan &gt; BBM / Kupon</div>
       </div>
+    </div>
+    <div class="panel" id="kupon-panel" style="margin-bottom:16px;">
+      <div class="toolbar__title" style="font-size:15px;margin-bottom:12px;">Penyerapan &amp; Sisa Kupon BBM</div>
+      <div id="kupon-slot">${skeletonKuponCards()}</div>
     </div>
     <div class="kpi-grid" id="kpi-slot" style="margin-bottom:16px;">${skeletonCards()}</div>
     <div class="panel">
@@ -51,6 +57,14 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
   const rodaFilter = root.querySelector('#f-roda');
   const pengemudiFilter = root.querySelector('#f-pengemudi');
   const sortSelect = root.querySelector('#f-sort');
+
+  const kuponSlot = root.querySelector('#kupon-slot');
+  try {
+    const penyerapan = await listPenyerapanKupon(tahunAnggaranId);
+    renderKuponCards(kuponSlot, penyerapan);
+  } catch (err) {
+    kuponSlot.innerHTML = `<div class="alert alert--error">Gagal memuat data Pengadaan/Penyerapan Kupon BBM.</div>`;
+  }
 
   let allRows = [];
   try {
@@ -124,6 +138,58 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
   [bulanFilter, jenisFilter, rodaFilter, sortSelect].forEach((el) => el.addEventListener('change', draw));
   [nopolFilter, pengemudiFilter].forEach((el) => el.addEventListener('input', debounce(draw, 250)));
   draw();
+}
+
+function renderKuponCards(slot, penyerapanRows) {
+  // Gabungkan lintas OPD (untuk super_admin yang melihat >1 OPD) supaya
+  // tetap menyajikan 1 angka yang jelas per jenis roda, bukan pecahan per OPD.
+  const totals = {};
+  RODA_ORDER.forEach((roda) => {
+    totals[roda] = { pengadaan: 0, terpakai: 0, nilaiPengadaan: 0, nilaiTerpakai: 0, hasData: false };
+  });
+  (penyerapanRows || []).forEach((r) => {
+    const t = totals[r.roda];
+    if (!t) return;
+    t.pengadaan += Number(r.kupon_pengadaan) || 0;
+    t.terpakai += Number(r.kupon_terpakai) || 0;
+    t.nilaiPengadaan += Number(r.nilai_pengadaan) || 0;
+    t.nilaiTerpakai += Number(r.nilai_terpakai) || 0;
+    t.hasData = true;
+  });
+
+  const anyData = RODA_ORDER.some((r) => totals[r].hasData);
+  if (!anyData) {
+    slot.innerHTML = `<div class="empty-state"><strong>Belum ada Pengadaan Kupon BBM</strong>Kuota lembar kupon belum diinput untuk Tahun Anggaran ini. Tambahkan di menu Kendaraan &gt; Pengadaan Kupon BBM.</div>`;
+    return;
+  }
+
+  slot.innerHTML = `
+    <div class="kpi-grid">
+      ${RODA_ORDER.map((roda) => {
+        const t = totals[roda];
+        const sisa = t.pengadaan - t.terpakai;
+        const nilaiSisa = t.nilaiPengadaan - t.nilaiTerpakai;
+        const persentase = t.pengadaan ? Math.round((t.terpakai / t.pengadaan) * 10000) / 100 : 0;
+        const barColor = persentase >= 100 ? '#dc2626' : persentase >= 80 ? '#d97706' : '#0ea5e9';
+        return `
+          <div class="kpi-card" style="grid-column: span 2; min-width:300px;">
+            <div class="kpi-card__label" style="font-weight:700;margin-bottom:8px;">Kupon BBM ${RODA_LABEL[roda]} (${formatRupiah(KUPON_NOMINAL[roda])}/lembar)</div>
+            ${t.hasData ? `
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+                <div><div style="font-size:11px;color:var(--gray-500);">Pengadaan</div><div style="font-weight:700;">${t.pengadaan} lembar</div><div style="font-size:11.5px;color:var(--gray-500);">${formatRupiah(t.nilaiPengadaan)}</div></div>
+                <div><div style="font-size:11px;color:var(--gray-500);">Terpakai</div><div style="font-weight:700;">${t.terpakai} lembar</div><div style="font-size:11.5px;color:var(--gray-500);">${formatRupiah(t.nilaiTerpakai)}</div></div>
+                <div><div style="font-size:11px;color:var(--gray-500);">Sisa</div><div style="font-weight:700;${sisa < 0 ? 'color:#dc2626;' : ''}">${sisa} lembar</div><div style="font-size:11.5px;color:var(--gray-500);">${formatRupiah(nilaiSisa)}</div></div>
+              </div>
+              <div style="height:8px;border-radius:4px;background:var(--gray-100);overflow:hidden;margin-bottom:4px;">
+                <div style="height:100%;width:${Math.min(persentase, 100)}%;background:${barColor};"></div>
+              </div>
+              <div style="font-size:11.5px;color:var(--gray-500);">${persentase}% terserap</div>
+            ` : `<div class="empty-state" style="padding:8px 0;">Kuota belum diinput.</div>`}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
 }
 
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }

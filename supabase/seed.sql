@@ -133,3 +133,16 @@ values
    'aaaaaaaa-0000-0000-0000-000000000026', '2026-03-14', 'pertalite',
    'roda2', 2, 25000,
    8410, 8460, 'Siti Aminah');
+
+-- ---------------------------------------------------------
+-- 7. Pengadaan Kupon BBM Tahun Anggaran 2026 (contoh, sesuai kebutuhan riil):
+--      - Roda 4: 240 lembar x Rp 100.000 = Rp 24.000.000
+--      - Roda 2: 672 lembar x Rp  25.000 = Rp 16.800.000
+-- ---------------------------------------------------------
+insert into pengadaan_kupon_bbm (tahun_anggaran_id, opd_id, roda, jumlah_kupon, nilai_per_kupon, keterangan)
+values
+  ('aaaaaaaa-0000-0000-0000-000000000026', '11111111-1111-1111-1111-111111111111',
+   'roda4', 240, 100000, 'Pengadaan Kupon BBM Roda 4 TA 2026'),
+  ('aaaaaaaa-0000-0000-0000-000000000026', '11111111-1111-1111-1111-111111111111',
+   'roda2', 672, 25000, 'Pengadaan Kupon BBM Roda 2 TA 2026')
+on conflict do nothing;

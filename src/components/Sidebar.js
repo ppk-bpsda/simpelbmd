@@ -52,6 +52,7 @@ const MENU = [
       { label: 'Pajak & Perijinan', path: '/kendaraan/pajak' },
       { label: 'Pemeliharaan', path: '/kendaraan/pemeliharaan' },
       { label: 'BBM / Kupon', path: '/kendaraan/bbm' },
+      { label: 'Pengadaan Kupon BBM', path: '/kendaraan/bbm-pengadaan' },
       { label: 'Import KIB', path: '/import/kib' },
       { label: 'Import Pajak', path: '/import/pajak' },
       { label: 'Import Master', path: '/import/master' },

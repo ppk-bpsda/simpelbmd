@@ -14,6 +14,7 @@ import { renderPajak } from '../pages/Pajak.js';
 import { renderImportPajak } from '../pages/ImportPajak.js';
 import { renderPemeliharaan } from '../pages/Pemeliharaan.js';
 import { renderBbm } from '../pages/Bbm.js';
+import { renderPengadaanBbm } from '../pages/PengadaanBbm.js';
 import { renderDashboardAnggaran } from '../pages/DashboardAnggaran.js';
 import { renderDashboardRealisasi } from '../pages/DashboardRealisasi.js';
 import { renderDashboardMonitoring } from '../pages/DashboardMonitoring.js';
@@ -80,6 +81,7 @@ export async function mountAppShell(root, profile) {
     registerRoute('/import/pajak', (el) => renderImportPajak(el, ctx()));
     registerRoute('/kendaraan/pemeliharaan', (el) => renderPemeliharaan(el, ctx()));
     registerRoute('/kendaraan/bbm', (el) => renderBbm(el, ctx()));
+    registerRoute('/kendaraan/bbm-pengadaan', (el) => renderPengadaanBbm(el, ctx()));
     registerRoute('/dashboard/anggaran', (el) => renderDashboardAnggaran(el, ctx()));
     registerRoute('/dashboard/realisasi', (el) => renderDashboardRealisasi(el, ctx()));
     registerRoute('/dashboard/monitoring', (el) => renderDashboardMonitoring(el, ctx()));
