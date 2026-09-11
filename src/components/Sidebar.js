@@ -53,6 +53,7 @@ const MENU = [
       { label: 'Pemeliharaan', path: '/kendaraan/pemeliharaan' },
       { label: 'BBM / Kupon', path: '/kendaraan/bbm' },
       { label: 'Import KIB', path: '/import/kib' },
+      { label: 'Import Pajak', path: '/import/pajak' },
       { label: 'Import Master', path: '/import/master' },
     ],
   },

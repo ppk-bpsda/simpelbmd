@@ -11,6 +11,7 @@ import { renderKibKendaraan } from '../pages/KibKendaraan.js';
 import { renderKibPeralatan } from '../pages/KibPeralatan.js';
 import { renderImportKIB } from '../pages/ImportKIB.js';
 import { renderPajak } from '../pages/Pajak.js';
+import { renderImportPajak } from '../pages/ImportPajak.js';
 import { renderPemeliharaan } from '../pages/Pemeliharaan.js';
 import { renderBbm } from '../pages/Bbm.js';
 import { renderDashboardAnggaran } from '../pages/DashboardAnggaran.js';
@@ -76,6 +77,7 @@ export async function mountAppShell(root, profile) {
     registerRoute('/kib/aset', (el) => renderKibPeralatan(el, { ...ctx(), defaultKategori: 'aset_lainnya' }));
     registerRoute('/import/kib', (el) => renderImportKIB(el, ctx()));
     registerRoute('/kendaraan/pajak', (el) => renderPajak(el, ctx()));
+    registerRoute('/import/pajak', (el) => renderImportPajak(el, ctx()));
     registerRoute('/kendaraan/pemeliharaan', (el) => renderPemeliharaan(el, ctx()));
     registerRoute('/kendaraan/bbm', (el) => renderBbm(el, ctx()));
     registerRoute('/dashboard/anggaran', (el) => renderDashboardAnggaran(el, ctx()));

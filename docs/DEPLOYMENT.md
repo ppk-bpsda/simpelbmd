@@ -37,6 +37,8 @@ Migration ada di `supabase/migrations/`, urutkan sesuai nomor file:
 0003_storage_policies.sql
 0004_phase5_views.sql
 0005_phase7_hardening.sql
+0006_dpa_dokumen.sql
+0007_import_pajak.sql
 ```
 
 Cara apply (pilih salah satu):

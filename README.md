@@ -23,6 +23,13 @@ Yang sudah berfungsi nyata (bukan mockup):
 
 Modul lain sudah berfungsi nyata melalui Phase 3-7 (KIB, transaksi Pajak/Pemeliharaan/BBM, monitoring per-Nopol, laporan/export, Data Quality Center, User Management). Satu-satunya halaman yang masih placeholder eksplisit adalah **Administrasi > Pengaturan** (`#/admin/pengaturan`) — belum ada spesifikasi kontennya. Roadmap lengkap ada di bawah.
 
+**Phase 4+ — Import Pajak (baru):**
+- Halaman **Import Pajak** (`#/import/pajak`): mengenali otomatis format "Daftar/Register Pembayaran Pajak Kendaraan Bermotor" yang dipakai Bagian Perekonomian & SDA (header dua baris, Nopol/Merk/No Rangka/No Mesin/Tahun/Pemakai/Kondisi + Tanggal Jatuh Tempo Pajak berulang tahunan + kolom Ket. Bayar per tahun) — tanpa perlu mapping kolom manual, dan menggabungkan semua sheet yang cocok dalam satu file.
+- Dari satu baris kendaraan di file, sistem membuat: (a) data master **Kendaraan (KIB)** bila belum ada (upsert berdasar Nopol, tidak pernah menimpa field yang sudah terisi manual), (b) transaksi **riwayat** Pajak/Perijinan untuk tiap tahun berstatus "SUDAH", dan (c) satu transaksi **proyeksi** untuk siklus jatuh tempo berikutnya (dihitung dari tanggal hari ini) supaya kartu pengingat H-30/H-14/H-7 di halaman Pajak & Perijinan langsung aktif meski histori pembayaran belum lengkap. Nilai (Rp) dan Nomor Dokumen tidak tersedia di format file ini, sehingga diisi 0/kosong dan wajib dilengkapi manual setelah import.
+- File dengan format tabel transaksi biasa (kolom Nopol/Jenis/Tanggal/Nilai, dst.) tetap didukung lewat mode mapping kolom manual (fallback), dengan pencocokan Nopol ke data KIB yang sudah ada.
+- Import berulang dari file yang sama aman diulang: kendaraan yang sudah ada hanya diperbarui field kosongnya, dan transaksi dengan kombinasi kendaraan + masa berlaku yang sama tidak digandakan.
+- Migration `0006` schema import_logs perlu `0007_import_pajak.sql` (menambahkan `'pajak'` ke daftar `jenis` yang diizinkan) — jalankan setelah migration sebelumnya bila meng-upgrade instalasi lama.
+
 **Phase 7 — Administrasi & hardening (baru):**
 - **User Management** (`#/admin/user`, super_admin): daftar user, tambah user baru (lewat Edge Function `create-user` ber-service_role, karena RLS `profiles` sengaja tidak mengizinkan INSERT langsung dari client), ubah role/OPD/nama (langsung lewat client karena super_admin sudah diizinkan RLS), nonaktifkan/aktifkan akun, reset password (lewat Edge Function `reset-user-password`).
 - **OPD** & **Tahun Anggaran** (`#/admin/opd`, `#/admin/tahun-anggaran`): CRUD dasar; mengaktifkan Tahun Anggaran otomatis menonaktifkan yang lama (dijaga unique partial index di DB, bukan cuma di UI).
