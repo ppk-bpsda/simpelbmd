@@ -1,6 +1,6 @@
 import { listOpd } from '../services/opdService.js';
 import {
-  parseSpreadsheetFile, suggestKibColumnMapping, applyKibMappingAndValidate,
+  parseKibFile, suggestKibColumnMapping, applyKibMappingAndValidate,
   commitKibImport, downloadKibTemplate, KIB_TARGET_FIELDS, kibRequiredFields,
 } from '../services/importKibService.js';
 import { formatRupiah } from '../utils/format.js';
@@ -78,6 +78,8 @@ export async function renderImportKIB(root, { tahunAnggaranId, profile }) {
       <div class="dropzone" id="dropzone">
         <strong>Seret file ke sini atau klik untuk memilih</strong>
         Format didukung: .xlsx, .xls, .csv (maks. 10MB). Satu file dapat berisi baris Kendaraan dan Peralatan sekaligus.
+        File hasil unduhan resmi e-BMD (Format II.O.1.2 — Daftar BMD Peralatan &amp; Mesin) juga otomatis dikenali,
+        tanpa perlu mapping kolom manual.
         <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
       <div id="upload-alert"></div>
@@ -108,11 +110,27 @@ export async function renderImportKIB(root, { tahunAnggaranId, profile }) {
       }
       alertSlot.innerHTML = `<div class="alert alert--info">Membaca file...</div>`;
       try {
-        const { headers, rows } = await parseSpreadsheetFile(file);
+        const parsed = await parseKibFile(file);
         state.file = file;
-        state.headers = headers;
-        state.rawRows = rows;
-        state.mapping = suggestKibColumnMapping(headers);
+        state.headers = parsed.headers;
+        state.rawRows = parsed.rows;
+        state.isOfficialFormat = parsed.isOfficialFormat;
+
+        if (parsed.isOfficialFormat) {
+          // Format resmi e-BMD: header sudah identik dengan label field
+          // internal, jadi mapping otomatis 1:1 (identitas) — user tetap
+          // bisa meninjau/mengubahnya di langkah berikutnya bila perlu.
+          state.mapping = Object.fromEntries(KIB_TARGET_FIELDS.map((f) => [f.key, f.label]));
+          const meta = parsed.meta || {};
+          state.uploadNotice = `Format resmi e-BMD (${meta.formatCode || 'II.O.1.2'}) terdeteksi otomatis`
+            + (meta.satuanKerja ? ` — ${escapeHtml(meta.satuanKerja)}` : '')
+            + (meta.tahun ? `, Tahun ${escapeHtml(meta.tahun)}` : '')
+            + `. ${parsed.rows.length} baris barang ditemukan &amp; mapping kolom sudah otomatis.`;
+        } else {
+          state.mapping = suggestKibColumnMapping(parsed.headers);
+          state.uploadNotice = '';
+        }
+
         state.step = 1;
         draw();
       } catch (err) {
@@ -126,6 +144,7 @@ export async function renderImportKIB(root, { tahunAnggaranId, profile }) {
   // ------------------------------------------------------
   function drawMappingStep(slot) {
     slot.innerHTML = `
+      ${state.uploadNotice ? `<div class="alert alert--info" style="margin-bottom:14px;">${state.uploadNotice}</div>` : ''}
       <p style="font-size:13.5px;color:var(--gray-500);margin-top:0;">
         File <b>${escapeHtml(state.file?.name || '')}</b> memiliki ${state.rawRows.length} baris data.
         Field bertanda <b>(khusus Kendaraan)</b> boleh dikosongkan untuk baris Peralatan/Aset.
@@ -285,6 +304,7 @@ export async function renderImportKIB(root, { tahunAnggaranId, profile }) {
     slot.querySelector('#btn-new').addEventListener('click', () => {
       state.step = 0; state.file = null; state.headers = []; state.rawRows = [];
       state.mapping = {}; state.validated = []; state.summary = null;
+      state.isOfficialFormat = false; state.uploadNotice = '';
       draw();
     });
   }

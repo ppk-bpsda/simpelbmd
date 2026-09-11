@@ -3,6 +3,214 @@ import { validateKibRow } from '../validators/kibValidator.js';
 
 export { parseSpreadsheetFile } from './importService.js';
 
+// ============================================================
+// Dukungan import LANGSUNG dari format resmi Daftar BMD (KIB)
+// yang diunduh dari aplikasi e-BMD Pemda — "FORMAT II.O.1.2"
+// (Aset Tetap Peralatan & Mesin, Intrakomptabel & Ekstrakomptabel).
+//
+// File resmi ini TIDAK berbentuk tabel datar (1 baris header +
+// baris data). Strukturnya:
+//   - Baris 1-9   : judul dokumen & info Kuasa Pengguna Barang
+//   - Baris 10-12 : header kolom bertingkat
+//   - Baris data  : kode barang tersebar di kolom A-H, diselingi
+//                   baris kategori/subtotal (tanpa detail barang)
+//                   dan baris detail barang (dengan NIBAR, Nomor
+//                   Register, Spesifikasi, Nopol, dst.)
+//
+// Fungsi di bawah ini mendeteksi format tsb secara otomatis lalu
+// mengubahnya menjadi baris "virtual" dengan properti = label
+// KIB_TARGET_FIELDS, sehingga alur mapping/validasi/commit yang
+// SUDAH ADA (applyKibMappingAndValidate, commitKibImport, dst.)
+// tidak perlu diubah sama sekali — dan data yang sudah pernah
+// diimpor/diisi manual tidak tersentuh oleh perubahan ini.
+// ============================================================
+
+// Posisi kolom (0-based) sesuai FORMAT II.O.1.2 baku.
+const KIB_OFFICIAL_COLS = {
+  kodeLevels: [0, 1, 2, 3, 4, 5], // A-F: segmen kode barang bertingkat
+  kodeLeaf: 7, // H: segmen kode barang level barang (mis. "003")
+  namaKategori: 8, // I: nama klasifikasi/kategori barang
+  nibar: 11, // L
+  register: 12, // M: Nomor Register
+  spesifikasiNama: 13, // N: Spesifikasi Nama Barang
+  spesifikasiLainnya: 14, // O
+  merkTipe: 16, // Q: "Merk: ..."
+  lokasi: 17, // R
+  nopol: 18, // S
+  nomorRangka: 19, // T
+  nomorBpkb: 20, // U
+  jumlah: 21, // V
+  satuan: 22, // W
+  hargaSatuan: 24, // Y
+  nilaiPerolehan: 25, // Z
+  caraPerolehan: 26, // AA
+  tanggalPerolehan: 27, // AB
+  statusPenggunaan: 28, // AC: Kuasa Pengguna / OPD (dipakai sebagai "pengguna")
+  keterangan: 30, // AE
+};
+
+function cellStr(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).trim();
+}
+
+/**
+ * Mendeteksi kode format resmi KIB dari sel A1, mis. "FORMAT II.O.1.2".
+ * Mengembalikan null jika file bukan format resmi KIB.
+ */
+function detectKibOfficialFormatCode(aoa) {
+  const firstCell = aoa?.[0]?.[0];
+  if (typeof firstCell !== 'string') return null;
+  const match = firstCell.trim().toUpperCase().match(/FORMAT\s+(II\.O\.\d+\.\d+)/);
+  return match ? match[1] : null;
+}
+
+/** Ekstrak tahun dari nilai tanggal, mendukung Date object maupun string dd/mm/yyyy. */
+function extractYear(raw) {
+  if (!raw) return null;
+  if (raw instanceof Date && !Number.isNaN(raw.getTime())) return raw.getFullYear();
+  const str = String(raw);
+  const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmy) return Number(dmy[3]);
+  const anyYear = str.match(/(\d{4})/);
+  return anyYear ? Number(anyYear[1]) : null;
+}
+
+/**
+ * Cari beberapa baris info header dokumen (Kuasa Pengguna Barang, Kode
+ * Lokasi, Tahun) untuk ditampilkan sebagai konfirmasi visual ke user,
+ * murni informasional — tidak mempengaruhi hasil parsing baris barang.
+ */
+function extractKibDocMeta(aoa) {
+  const meta = { satuanKerja: '', kodeLokasi: '', tahun: '', judul: '' };
+  for (let i = 0; i < Math.min(aoa.length, 12); i += 1) {
+    const row = aoa[i] || [];
+    const label = cellStr(row[0]).toLowerCase();
+    if (label.startsWith('kuasa pengguna barang')) meta.satuanKerja = cellStr(row[10] ?? row[9]);
+    else if (label.startsWith('kode lokasi')) meta.kodeLokasi = cellStr(row[10] ?? row[9]);
+    else if (/^tahun\s+\d{4}$/.test(label)) meta.tahun = label.replace('tahun', '').trim();
+    else if (i === 1) meta.judul = cellStr(row[0]);
+  }
+  return meta;
+}
+
+/**
+ * Parse array-of-array (hasil sheet_to_json {header:1}) format resmi
+ * KIB "FORMAT II.O.1.2" menjadi baris siap pakai untuk pipeline import
+ * yang sudah ada. Satu baris hasil = satu unit barang.
+ */
+function parseKibOfficialAoa(aoa) {
+  const c = KIB_OFFICIAL_COLS;
+  const rows = [];
+
+  for (const row of aoa) {
+    if (!row || !row.length) continue;
+    const leaf = cellStr(row[c.kodeLeaf]);
+    const register = cellStr(row[c.register]);
+    // Baris detail barang = punya kode level terkecil (H) DAN Nomor Register.
+    // Baris kategori/subtotal punya kode di kolom A-F saja, H & M kosong.
+    if (!leaf || !register) continue;
+
+    const kodeSegments = [...c.kodeLevels.map((idx) => cellStr(row[idx])), leaf].filter(Boolean);
+    const namaBarang = cellStr(row[c.spesifikasiNama]) || cellStr(row[c.namaKategori]);
+    const merkRaw = cellStr(row[c.merkTipe]);
+    const merk = merkRaw.replace(/^merk\s*:\s*/i, '').trim();
+    const nopol = cellStr(row[c.nopol]);
+    const nomorRangka = cellStr(row[c.nomorRangka]);
+    const nomorBpkb = cellStr(row[c.nomorBpkb]);
+    const isKendaraan = Boolean(nopol || nomorRangka);
+    const nilaiPerolehan = row[c.nilaiPerolehan];
+    const tahun = extractYear(row[c.tanggalPerolehan]);
+
+    // Properti object memakai LABEL field (bukan key) agar identik dengan
+    // apa yang dipakai suggestKibColumnMapping/applyKibMappingAndValidate
+    // (raw[sourceHeader] di mana sourceHeader = label kolom terpetakan).
+    const mapped = {};
+    for (const field of KIB_TARGET_FIELDS) {
+      switch (field.key) {
+        case 'kategori': mapped[field.label] = isKendaraan ? 'Kendaraan' : 'Peralatan'; break;
+        case 'kode_barang': mapped[field.label] = kodeSegments.join('.'); break;
+        case 'register': mapped[field.label] = register || cellStr(row[c.nibar]); break;
+        case 'nama_barang': mapped[field.label] = namaBarang; break;
+        case 'merk': mapped[field.label] = merk; break;
+        case 'type': mapped[field.label] = ''; break;
+        case 'tahun_perolehan': mapped[field.label] = tahun ?? ''; break;
+        case 'nilai_perolehan': mapped[field.label] = nilaiPerolehan ?? ''; break;
+        case 'kondisi': mapped[field.label] = ''; break; // tidak tersedia di format resmi ini
+        case 'lokasi': mapped[field.label] = cellStr(row[c.lokasi]); break;
+        case 'pengguna': mapped[field.label] = cellStr(row[c.statusPenggunaan]); break;
+        case 'nopol': mapped[field.label] = nopol; break;
+        case 'nomor_rangka': mapped[field.label] = nomorRangka; break;
+        case 'nomor_mesin': mapped[field.label] = ''; break; // tidak ada kolom terpisah di format resmi ini
+        case 'nomor_bpkb': mapped[field.label] = nomorBpkb; break;
+        case 'jenis_kendaraan': mapped[field.label] = isKendaraan ? cellStr(row[c.namaKategori]) : ''; break;
+        default: mapped[field.label] = '';
+      }
+    }
+    rows.push(mapped);
+  }
+
+  return rows;
+}
+
+/**
+ * STEP 1 (khusus KIB): baca file lalu deteksi apakah formatnya adalah
+ * format resmi e-BMD "FORMAT II.O.1.2". Jika ya, otomatis di-parse tanpa
+ * perlu mapping kolom manual. Jika tidak, jatuh kembali (fallback) ke
+ * pembacaan tabel datar biasa (mode lama / template SIMPELBMD).
+ */
+export async function parseKibFile(file) {
+  const allowedExt = ['.xlsx', '.xls', '.csv'];
+  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  if (!allowedExt.includes(ext)) {
+    throw new Error('Format file tidak didukung. Gunakan file .xlsx, .xls, atau .csv.');
+  }
+  const maxSizeBytes = 10 * 1024 * 1024;
+  if (file.size > maxSizeBytes) {
+    throw new Error('Ukuran file melebihi 10MB. Silakan pecah file menjadi beberapa bagian.');
+  }
+
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+  const firstSheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[firstSheetName];
+  // raw:true di sini (bukan raw:false seperti parser tabel datar) supaya
+  // kolom angka (Nilai Perolehan dkk.) datang sebagai number asli, bukan
+  // string berformat ribuan ("252,000,000.00") yang tidak bisa dibaca ulang
+  // oleh parseNumericValue di kibValidator.
+  const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+
+  const formatCode = detectKibOfficialFormatCode(aoa);
+
+  if (formatCode === 'II.O.1.2') {
+    const parsedRows = parseKibOfficialAoa(aoa);
+    if (!parsedRows.length) {
+      throw new Error('Format resmi KIB (II.O.1.2) terdeteksi, tetapi tidak ada baris detail barang yang bisa dibaca.');
+    }
+    return {
+      headers: KIB_TARGET_FIELDS.map((f) => f.label),
+      rows: parsedRows,
+      sheetName: firstSheetName,
+      isOfficialFormat: true,
+      meta: { ...extractKibDocMeta(aoa), formatCode, totalBarisTerdeteksi: parsedRows.length },
+    };
+  }
+
+  if (formatCode) {
+    // Format resmi KIB lain terdeteksi (mis. Tanah/Gedung/Aset Lainnya) yang
+    // belum didukung secara otomatis — jangan dipaksakan, minta bantuan admin.
+    throw new Error(`Format resmi KIB "${formatCode}" terdeteksi, namun belum didukung secara otomatis. Saat ini hanya FORMAT II.O.1.2 (Peralatan & Mesin) yang didukung. Silakan gunakan Template Excel SIMPELBMD, atau hubungi admin untuk menambahkan dukungan format ini.`);
+  }
+
+  // Bukan format resmi -> fallback ke mode tabel datar (mode lama).
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+  if (!rows.length) {
+    throw new Error('File tidak berisi data. Pastikan baris pertama adalah header kolom.');
+  }
+  return { headers: Object.keys(rows[0]), rows, sheetName: firstSheetName, isOfficialFormat: false };
+}
+
 export const KIB_TARGET_FIELDS = [
   { key: 'kategori', label: 'Kategori (Kendaraan/Peralatan/Aset Lainnya)' },
   { key: 'kode_barang', label: 'Kode Barang' },
