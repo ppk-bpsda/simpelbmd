@@ -1,5 +1,5 @@
 import { listBbm } from '../services/transaksiService.js';
-import { JENIS_BBM_OPTIONS } from '../validators/transaksiValidator.js';
+import { JENIS_BBM_OPTIONS, RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 
 const BULAN_LABEL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -27,12 +27,15 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
         <div class="field" style="min-width:160px;"><label>Jenis BBM</label>
           <select id="f-jenis"><option value="">Semua Jenis</option>${JENIS_BBM_OPTIONS.map((j) => `<option value="${j.value}">${j.label}</option>`).join('')}</select>
         </div>
+        <div class="field" style="min-width:150px;"><label>Roda</label>
+          <select id="f-roda"><option value="">Semua</option><option value="roda4">Roda 4</option><option value="roda2">Roda 2</option></select>
+        </div>
         <div class="field" style="min-width:160px;"><label>Pengemudi</label><input id="f-pengemudi" placeholder="Cari pengemudi..." /></div>
         <div class="field" style="min-width:180px;"><label>Urutkan</label>
           <select id="f-sort">
             <option value="tanggal_desc">Tanggal Terbaru</option>
             <option value="nilai_desc">Nominal Tertinggi</option>
-            <option value="liter_desc">Liter Terbanyak</option>
+            <option value="kupon_desc">Jumlah Kupon Terbanyak</option>
             <option value="nopol_asc">Nopol (A-Z)</option>
           </select>
         </div>
@@ -45,6 +48,7 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
   const bulanFilter = root.querySelector('#f-bulan');
   const nopolFilter = root.querySelector('#f-nopol');
   const jenisFilter = root.querySelector('#f-jenis');
+  const rodaFilter = root.querySelector('#f-roda');
   const pengemudiFilter = root.querySelector('#f-pengemudi');
   const sortSelect = root.querySelector('#f-sort');
 
@@ -61,33 +65,32 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
       if (bulanFilter.value && new Date(r.tanggal).getMonth() + 1 !== Number(bulanFilter.value)) return false;
       if (nopolFilter.value && !(r.kendaraan?.nopol || '').toLowerCase().includes(nopolFilter.value.toLowerCase())) return false;
       if (jenisFilter.value && r.jenis_bbm !== jenisFilter.value) return false;
+      if (rodaFilter.value && r.roda_kendaraan !== rodaFilter.value) return false;
       if (pengemudiFilter.value && !(r.pengemudi || '').toLowerCase().includes(pengemudiFilter.value.toLowerCase())) return false;
       return true;
     });
 
     rows = [...rows].sort((a, b) => {
       if (sortSelect.value === 'nilai_desc') return Number(b.nilai) - Number(a.nilai);
-      if (sortSelect.value === 'liter_desc') return Number(b.liter) - Number(a.liter);
+      if (sortSelect.value === 'kupon_desc') return Number(b.jumlah_kupon) - Number(a.jumlah_kupon);
       if (sortSelect.value === 'nopol_asc') return (a.kendaraan?.nopol || '').localeCompare(b.kendaraan?.nopol || '');
       return new Date(b.tanggal) - new Date(a.tanggal);
     });
 
-    const totalKupon = rows.length;
-    const totalLiter = rows.reduce((s, r) => s + Number(r.liter), 0);
+    const totalTransaksi = rows.length;
+    const totalKupon = rows.reduce((s, r) => s + Number(r.jumlah_kupon), 0);
     const totalNominal = rows.reduce((s, r) => s + Number(r.nilai), 0);
     const totalJarak = rows.reduce((s, r) => s + (r.jarak_tempuh || 0), 0);
-    const rataLiter = totalKupon ? totalLiter / totalKupon : 0;
-    const rataNominal = totalKupon ? totalNominal / totalKupon : 0;
-    const efisiensi = totalLiter > 0 ? totalJarak / totalLiter : 0;
+    const rataKupon = totalTransaksi ? totalKupon / totalTransaksi : 0;
+    const rataNominal = totalTransaksi ? totalNominal / totalTransaksi : 0;
 
     root.querySelector('#kpi-slot').innerHTML = `
+      <div class="kpi-card"><div class="kpi-card__label">Total Transaksi</div><div class="kpi-card__value">${totalTransaksi}</div></div>
       <div class="kpi-card"><div class="kpi-card__label">Total Kupon</div><div class="kpi-card__value">${totalKupon}</div></div>
-      <div class="kpi-card"><div class="kpi-card__label">Total Liter</div><div class="kpi-card__value">${totalLiter.toFixed(1)} L</div></div>
       <div class="kpi-card kpi-card--accent"><div class="kpi-card__label">Total Nominal</div><div class="kpi-card__value">${formatRupiah(totalNominal)}</div></div>
-      <div class="kpi-card"><div class="kpi-card__label">Rata-rata Liter/Transaksi</div><div class="kpi-card__value">${rataLiter.toFixed(1)} L</div></div>
+      <div class="kpi-card"><div class="kpi-card__label">Rata-rata Kupon/Transaksi</div><div class="kpi-card__value">${rataKupon.toFixed(1)}</div></div>
       <div class="kpi-card"><div class="kpi-card__label">Rata-rata Nominal/Transaksi</div><div class="kpi-card__value">${formatRupiah(rataNominal)}</div></div>
       <div class="kpi-card"><div class="kpi-card__label">Total Jarak Tempuh</div><div class="kpi-card__value">${totalJarak} km</div></div>
-      <div class="kpi-card"><div class="kpi-card__label">Efisiensi Rata-rata</div><div class="kpi-card__value">${efisiensi ? efisiensi.toFixed(1) + ' km/L' : '-'}</div></div>
     `;
 
     if (!rows.length) {
@@ -98,23 +101,19 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
     tableSlot.innerHTML = `
       <div class="table-scroll">
         <table class="data-table">
-          <thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis</th><th>No. Kupon</th><th class="num">Liter</th><th class="num">Nilai</th><th class="num">Jarak</th><th class="num">Efisiensi</th><th>Pengemudi</th></tr></thead>
+          <thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis</th><th>Roda</th><th class="num">Jml Kupon</th><th class="num">Nilai</th><th class="num">Jarak</th><th>Pengemudi</th></tr></thead>
           <tbody>
-            ${rows.map((r) => {
-              const eff = r.jarak_tempuh && r.liter ? (r.jarak_tempuh / r.liter).toFixed(1) + ' km/L' : '-';
-              return `
+            ${rows.map((r) => `
                 <tr>
                   <td>${formatDate(r.tanggal)}</td>
                   <td style="font-weight:700;">${escapeHtml(r.kendaraan?.nopol || '-')}</td>
                   <td>${jenisLabel(r.jenis_bbm)}</td>
-                  <td>${escapeHtml(r.nomor_kupon || '-')}</td>
-                  <td class="num">${Number(r.liter).toFixed(1)} L</td>
+                  <td>${escapeHtml(RODA_LABEL[r.roda_kendaraan] || '-')}</td>
+                  <td class="num">${r.jumlah_kupon}</td>
                   <td class="num">${formatRupiah(r.nilai)}</td>
                   <td class="num">${r.jarak_tempuh ?? '-'}</td>
-                  <td class="num">${eff}</td>
                   <td>${escapeHtml(r.pengemudi || '-')}</td>
-                </tr>`;
-            }).join('')}
+                </tr>`).join('')}
           </tbody>
         </table>
       </div>
@@ -122,7 +121,7 @@ export async function renderMonitoringBbm(root, { tahunAnggaranId }) {
     `;
   }
 
-  [bulanFilter, jenisFilter, sortSelect].forEach((el) => el.addEventListener('change', draw));
+  [bulanFilter, jenisFilter, rodaFilter, sortSelect].forEach((el) => el.addEventListener('change', draw));
   [nopolFilter, pengemudiFilter].forEach((el) => el.addEventListener('input', debounce(draw, 250)));
   draw();
 }

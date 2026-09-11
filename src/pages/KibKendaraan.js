@@ -1,6 +1,6 @@
 import { listKendaraan, createKendaraan, updateKendaraan, softDeleteKendaraan } from '../services/kibService.js';
 import { listOpd } from '../services/opdService.js';
-import { KONDISI_OPTIONS } from '../validators/kibValidator.js';
+import { KONDISI_OPTIONS, RODA_OPTIONS } from '../validators/kibValidator.js';
 import { formatRupiah } from '../utils/format.js';
 import { showToast, confirmDialog } from '../utils/ui.js';
 
@@ -49,7 +49,7 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
         <div class="table-scroll">
           <table class="data-table">
             <thead><tr>
-              <th>Nopol</th><th>Nama Barang</th><th>Merk / Type</th><th>Kondisi</th>
+              <th>Nopol</th><th>Nama Barang</th><th>Merk / Type</th><th>Roda</th><th>Kondisi</th>
               <th class="num">Nilai Perolehan</th><th>OPD</th><th></th>
             </tr></thead>
             <tbody>
@@ -58,6 +58,7 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
                   <td style="font-weight:700;">${escapeHtml(r.nopol)}</td>
                   <td>${escapeHtml(r.kib?.nama_barang || '-')}</td>
                   <td>${escapeHtml(r.kib?.merk || '-')} ${escapeHtml(r.kib?.type || '')}</td>
+                  <td>${rodaBadge(r.roda)}</td>
                   <td>${kondisiBadge(r.kib?.kondisi)}</td>
                   <td class="num">${formatRupiah(r.kib?.nilai_perolehan || 0)}</td>
                   <td>${escapeHtml(r.kib?.opd?.nama_opd || '-')}</td>
@@ -110,6 +111,13 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
         <div class="field"><label>Merk</label><input id="f-merk" value="${escapeAttr(k.merk)}" /></div>
         <div class="field"><label>Type</label><input id="f-type" value="${escapeAttr(k.type)}" /></div>
         <div class="field"><label>Jenis Kendaraan</label><input id="f-jenis" value="${escapeAttr(existing?.jenis_kendaraan)}" /></div>
+        <div class="field"><label>Jenis Roda *</label>
+          <select id="f-roda">
+            <option value="">— Pilih —</option>
+            ${RODA_OPTIONS.map((o) => `<option value="${o.value}" ${existing?.roda === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
+          </select>
+          <small style="color:var(--gray-500);">Menentukan nominal Kupon BBM &amp; rekening belanja BBM otomatis.</small>
+        </div>
         <div class="field"><label>Kode Barang</label><input id="f-kodebarang" value="${escapeAttr(k.kode_barang)}" /></div>
         <div class="field"><label>Register</label><input id="f-register" value="${escapeAttr(k.register)}" /></div>
         <div class="field"><label>Tahun Perolehan</label><input id="f-tahun" type="number" value="${k.tahun_perolehan || ''}" /></div>
@@ -139,7 +147,9 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
     formSlot.querySelector('#f-save').addEventListener('click', async () => {
       const nopol = formSlot.querySelector('#f-nopol').value.trim().toUpperCase();
       const nama_barang = formSlot.querySelector('#f-nama').value.trim();
+      const roda = formSlot.querySelector('#f-roda').value || null;
       if (!nopol || !nama_barang) { showToast('Nopol dan Nama Barang wajib diisi.', 'warning'); return; }
+      if (!roda) { showToast('Jenis Roda wajib dipilih (menentukan nominal Kupon BBM).', 'warning'); return; }
 
       const opdSelect = formSlot.querySelector('#f-opd');
       const opdId = opdSelect ? opdSelect.value : profile.opd_id;
@@ -163,6 +173,7 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
           nomor_mesin: formSlot.querySelector('#f-mesin').value.trim().toUpperCase(),
           nomor_bpkb: formSlot.querySelector('#f-bpkb').value.trim(),
           jenis_kendaraan: formSlot.querySelector('#f-jenis').value.trim(),
+          roda,
           penanggung_jawab: formSlot.querySelector('#f-pj').value.trim(),
           unit_kerja: formSlot.querySelector('#f-unit').value.trim(),
         },
@@ -187,6 +198,11 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
   refresh();
 }
 
+function rodaBadge(roda) {
+  if (roda === 'roda4') return `<span class="status-badge status-badge--info">Roda 4</span>`;
+  if (roda === 'roda2') return `<span class="status-badge status-badge--info">Roda 2</span>`;
+  return `<span class="status-badge status-badge--warning">Belum diisi</span>`;
+}
 function kondisiBadge(kondisi) {
   const map = { baik: ['Baik', 'safe'], rusak_ringan: ['Rusak Ringan', 'warning'], rusak_berat: ['Rusak Berat', 'critical'] };
   const [label, variant] = map[kondisi] || ['-', 'info'];

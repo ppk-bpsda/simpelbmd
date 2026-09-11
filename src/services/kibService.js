@@ -8,7 +8,7 @@ export async function listKendaraan(tahunAnggaranId) {
   const { data, error } = await supabase
     .from('kendaraan')
     .select(`
-      id, nopol, nomor_rangka, nomor_mesin, nomor_bpkb, jenis_kendaraan, status,
+      id, nopol, nomor_rangka, nomor_mesin, nomor_bpkb, jenis_kendaraan, roda, status,
       penanggung_jawab, unit_kerja,
       kib:kib_id ( id, kode_barang, register, nama_barang, merk, type, tahun_perolehan, nilai_perolehan, kondisi, lokasi, opd_id, tahun_anggaran_id, opd:opd_id(nama_opd) )
     `)
@@ -49,6 +49,7 @@ export async function createKendaraan({ tahunAnggaranId, opdId, kib, kendaraan }
       nomor_mesin: kendaraan.nomor_mesin || null,
       nomor_bpkb: kendaraan.nomor_bpkb || null,
       jenis_kendaraan: kendaraan.jenis_kendaraan || null,
+      roda: kendaraan.roda || null,
       penanggung_jawab: kendaraan.penanggung_jawab || null,
       unit_kerja: kendaraan.unit_kerja || null,
     })
@@ -88,6 +89,7 @@ export async function updateKendaraan(kendaraanId, kibId, { kib, kendaraan }) {
       nomor_mesin: kendaraan.nomor_mesin || null,
       nomor_bpkb: kendaraan.nomor_bpkb || null,
       jenis_kendaraan: kendaraan.jenis_kendaraan || null,
+      roda: kendaraan.roda || null,
       penanggung_jawab: kendaraan.penanggung_jawab || null,
       unit_kerja: kendaraan.unit_kerja || null,
     })

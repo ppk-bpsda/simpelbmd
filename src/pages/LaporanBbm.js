@@ -1,4 +1,5 @@
 import { listBbm, listKendaraanOptions } from '../services/transaksiService.js';
+import { RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah, formatDate } from '../utils/format.js';
 import { renderExportButtons } from '../utils/report.js';
 
@@ -15,7 +16,7 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
     <div class="toolbar">
       <div>
         <div class="toolbar__title">Laporan — Rekap BBM / Kupon</div>
-        <div class="toolbar__subtitle">Riwayat pengisian BBM: liter, nilai, dan jarak tempuh per kendaraan</div>
+        <div class="toolbar__subtitle">Riwayat penggunaan Kupon BBM: jumlah kupon, nilai, dan jarak tempuh per kendaraan</div>
       </div>
     </div>
     <div class="panel">
@@ -25,6 +26,9 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
         </div>
         <div class="field" style="min-width:180px;"><label>Jenis BBM</label>
           <select id="f-jenis"><option value="">Semua Jenis</option>${JENIS_OPTIONS.map((j) => `<option value="${j}">${JENIS_LABEL[j]}</option>`).join('')}</select>
+        </div>
+        <div class="field" style="min-width:150px;"><label>Roda</label>
+          <select id="f-roda"><option value="">Semua</option><option value="roda4">Roda 4</option><option value="roda2">Roda 2</option></select>
         </div>
         <div class="field" style="min-width:170px;"><label>Dari Tanggal</label><input type="date" id="f-dari" /></div>
         <div class="field" style="min-width:170px;"><label>Sampai Tanggal</label><input type="date" id="f-sampai" /></div>
@@ -38,6 +42,7 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
   const exportSlot = root.querySelector('#export-slot');
   const kendaraanFilter = root.querySelector('#f-kendaraan');
   const jenisFilter = root.querySelector('#f-jenis');
+  const rodaFilter = root.querySelector('#f-roda');
   const dariFilter = root.querySelector('#f-dari');
   const sampaiFilter = root.querySelector('#f-sampai');
 
@@ -55,9 +60,9 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
       kendaraanId: r.kendaraan?.id || null,
       nopol: r.kendaraan?.nopol || '-',
       jenisBbm: r.jenis_bbm,
-      nomorKupon: r.nomor_kupon || '-',
-      liter: Number(r.liter),
-      hargaPerLiter: Number(r.harga_per_liter),
+      roda: r.roda_kendaraan,
+      jumlahKupon: Number(r.jumlah_kupon),
+      nilaiPerKupon: Number(r.nilai_per_kupon),
       nilai: Number(r.nilai),
       jarakTempuh: r.jarak_tempuh,
       pengemudi: r.pengemudi || '-',
@@ -79,9 +84,9 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
     { key: 'tanggal', label: 'Tanggal', value: (r) => formatDate(r.tanggal) },
     { key: 'nopol', label: 'Nopol' },
     { key: 'jenisBbm', label: 'Jenis BBM', value: (r) => JENIS_LABEL[r.jenisBbm] || r.jenisBbm },
-    { key: 'nomorKupon', label: 'No. Kupon' },
-    { key: 'liter', label: 'Liter', numeric: true, value: (r) => r.liter.toLocaleString('id-ID') },
-    { key: 'hargaPerLiter', label: 'Harga/Liter', numeric: true, value: (r) => formatRupiah(r.hargaPerLiter) },
+    { key: 'roda', label: 'Roda', value: (r) => RODA_LABEL[r.roda] || r.roda },
+    { key: 'jumlahKupon', label: 'Jml Kupon', numeric: true, value: (r) => r.jumlahKupon.toLocaleString('id-ID') },
+    { key: 'nilaiPerKupon', label: 'Nilai/Kupon', numeric: true, value: (r) => formatRupiah(r.nilaiPerKupon) },
     { key: 'nilai', label: 'Nilai', numeric: true, value: (r) => formatRupiah(r.nilai) },
     { key: 'jarakTempuh', label: 'Jarak Tempuh (km)', numeric: true, value: (r) => (r.jarakTempuh ?? '-') },
     { key: 'pengemudi', label: 'Pengemudi' },
@@ -91,8 +96,9 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
   function currentSubtitle() {
     const kendaraanLabel = kendaraanFilter.value ? kendaraanFilter.options[kendaraanFilter.selectedIndex].textContent : 'Semua Kendaraan';
     const jenisLabel = jenisFilter.value ? JENIS_LABEL[jenisFilter.value] : 'Semua Jenis';
+    const rodaLabel = rodaFilter.value ? RODA_LABEL[rodaFilter.value] : 'Semua Roda';
     const periode = dariFilter.value || sampaiFilter.value ? `Periode ${dariFilter.value || '…'} s/d ${sampaiFilter.value || '…'}` : 'Seluruh Periode';
-    return `Filter: ${kendaraanLabel} • ${jenisLabel} • ${periode}`;
+    return `Filter: ${kendaraanLabel} • ${jenisLabel} • ${rodaLabel} • ${periode}`;
   }
 
   renderExportButtons(exportSlot, {
@@ -107,6 +113,7 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
     filtered = rows.filter((r) => {
       if (kendaraanFilter.value && r.kendaraanId !== kendaraanFilter.value) return false;
       if (jenisFilter.value && r.jenisBbm !== jenisFilter.value) return false;
+      if (rodaFilter.value && r.roda !== rodaFilter.value) return false;
       if (dariFilter.value && r.tanggal < dariFilter.value) return false;
       if (sampaiFilter.value && r.tanggal > sampaiFilter.value) return false;
       return true;
@@ -117,22 +124,22 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
       return;
     }
 
-    const totalLiter = filtered.reduce((s, r) => s + r.liter, 0);
+    const totalKupon = filtered.reduce((s, r) => s + r.jumlahKupon, 0);
     const totalNilai = filtered.reduce((s, r) => s + r.nilai, 0);
 
     tableSlot.innerHTML = `
       <div class="table-scroll">
         <table class="data-table">
-          <thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis</th><th>No. Kupon</th><th class="num">Liter</th><th class="num">Harga/Liter</th><th class="num">Nilai</th><th class="num">Jarak (km)</th><th>Pengemudi</th><th>Belanja</th></tr></thead>
+          <thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis</th><th>Roda</th><th class="num">Jml Kupon</th><th class="num">Nilai/Kupon</th><th class="num">Nilai</th><th class="num">Jarak (km)</th><th>Pengemudi</th><th>Belanja</th></tr></thead>
           <tbody>
             ${filtered.map((r) => `
               <tr>
                 <td>${formatDate(r.tanggal)}</td>
                 <td>${escapeHtml(r.nopol)}</td>
                 <td>${escapeHtml(JENIS_LABEL[r.jenisBbm] || r.jenisBbm)}</td>
-                <td>${escapeHtml(r.nomorKupon)}</td>
-                <td class="num">${r.liter.toLocaleString('id-ID')}</td>
-                <td class="num">${formatRupiah(r.hargaPerLiter)}</td>
+                <td>${escapeHtml(RODA_LABEL[r.roda] || r.roda)}</td>
+                <td class="num">${r.jumlahKupon.toLocaleString('id-ID')}</td>
+                <td class="num">${formatRupiah(r.nilaiPerKupon)}</td>
                 <td class="num">${formatRupiah(r.nilai)}</td>
                 <td class="num">${r.jarakTempuh ?? '-'}</td>
                 <td>${escapeHtml(r.pengemudi)}</td>
@@ -143,7 +150,7 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
           <tfoot>
             <tr style="font-weight:700;">
               <td colspan="4">Total (${filtered.length} transaksi)</td>
-              <td class="num">${totalLiter.toLocaleString('id-ID')}</td>
+              <td class="num">${totalKupon.toLocaleString('id-ID')}</td>
               <td></td>
               <td class="num">${formatRupiah(totalNilai)}</td>
               <td colspan="3"></td>
@@ -154,7 +161,7 @@ export async function renderLaporanBbm(root, { tahunAnggaranId }) {
     `;
   }
 
-  [kendaraanFilter, jenisFilter, dariFilter, sampaiFilter].forEach((el) => el.addEventListener('change', draw));
+  [kendaraanFilter, jenisFilter, rodaFilter, dariFilter, sampaiFilter].forEach((el) => el.addEventListener('change', draw));
   draw();
 }
 

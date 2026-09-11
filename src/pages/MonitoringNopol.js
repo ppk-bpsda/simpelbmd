@@ -1,7 +1,7 @@
 import { Chart } from 'chart.js/auto';
 import { getRekapPerKendaraan, getKendaraanIdentitas } from '../services/monitoringService.js';
 import { listPajak, listPemeliharaan, listBbm } from '../services/transaksiService.js';
-import { computeJatuhTempoStatus } from '../validators/transaksiValidator.js';
+import { computeJatuhTempoStatus, RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 import { navigate, currentQuery } from '../router.js';
 
@@ -222,8 +222,8 @@ function drawBbmTable(el, rows) {
   if (!rows.length) { el.innerHTML = emptyRow(); return; }
   el.innerHTML = `
     <div class="table-scroll"><table class="data-table">
-      <thead><tr><th>Tanggal</th><th>Jenis BBM</th><th class="num">Liter</th><th class="num">Nilai</th><th class="num">Jarak</th></tr></thead>
-      <tbody>${rows.map((r) => `<tr><td>${formatDate(r.tanggal)}</td><td>${escapeHtml(r.jenis_bbm)}</td><td class="num">${Number(r.liter).toFixed(1)} L</td><td class="num">${formatRupiah(r.nilai)}</td><td class="num">${r.jarak_tempuh ?? '-'} km</td></tr>`).join('')}</tbody>
+      <thead><tr><th>Tanggal</th><th>Jenis BBM</th><th>Roda</th><th class="num">Jml Kupon</th><th class="num">Nilai</th><th class="num">Jarak</th></tr></thead>
+      <tbody>${rows.map((r) => `<tr><td>${formatDate(r.tanggal)}</td><td>${escapeHtml(r.jenis_bbm)}</td><td>${escapeHtml(RODA_LABEL[r.roda_kendaraan] || '-')}</td><td class="num">${r.jumlah_kupon}</td><td class="num">${formatRupiah(r.nilai)}</td><td class="num">${r.jarak_tempuh ?? '-'} km</td></tr>`).join('')}</tbody>
     </table></div>
   `;
 }

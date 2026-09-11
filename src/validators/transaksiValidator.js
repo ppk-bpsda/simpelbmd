@@ -51,3 +51,15 @@ export const JENIS_BBM_OPTIONS = [
   { value: 'dexlite', label: 'Dexlite' },
   { value: 'lainnya', label: 'Lainnya' },
 ];
+
+// Nominal tetap per lembar Kupon BBM, ditentukan oleh klasifikasi roda
+// kendaraan (kendaraan.roda — lihat kibValidator.js RODA_OPTIONS).
+// R4: Rp 100.000/kupon — R2: Rp 25.000/kupon.
+export const KUPON_NOMINAL = { roda4: 100000, roda2: 25000 };
+export const RODA_LABEL = { roda4: 'Roda 4', roda2: 'Roda 2' };
+
+// Kode rekening belanja BBM, mengikuti klasifikasi roda kendaraan.
+export const BBM_KODE_REKENING = {
+  roda4: '5.1.02.03.002.00035', // Kendaraan Dinas Bermotor Perorangan
+  roda2: '5.1.02.03.002.00038', // Kendaraan Bermotor Beroda Dua
+};

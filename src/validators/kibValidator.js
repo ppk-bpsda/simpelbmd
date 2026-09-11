@@ -10,6 +10,14 @@ export const KONDISI_OPTIONS = [
   { value: 'rusak_berat', label: 'Rusak Berat' },
 ];
 
+// Klasifikasi roda kendaraan — dipakai untuk menentukan nominal kupon BBM
+// dan kode rekening belanja BBM otomatis (lihat transaksiValidator.js).
+// Berbeda dari "Jenis Kendaraan" (teks bebas/deskriptif, mis. "Minibus").
+export const RODA_OPTIONS = [
+  { value: 'roda2', label: 'Roda 2' },
+  { value: 'roda4', label: 'Roda 4' },
+];
+
 const KATEGORI_ALIASES = {
   kendaraan: ['kendaraan', 'vehicle', 'mobil', 'motor', 'roda 4', 'roda 2', 'kendaraan dinas'],
   peralatan: ['peralatan', 'equipment', 'alat', 'peralatan kantor', 'perlengkapan'],

@@ -68,7 +68,13 @@ insert into belanja (id, sub_kegiatan_id, kode_rekening, nama_belanja, kelompok,
   ('dddddddd-0002-0000-0000-000000000002', 'cccccccc-0002-0000-0000-000000000002',
    '5.1.02.02.05.0001', 'Belanja Pemeliharaan Kendaraan Dinas', 'pemeliharaan', 60000000),
   ('dddddddd-0003-0000-0000-000000000003', 'cccccccc-0002-0000-0000-000000000002',
-   '5.1.02.02.01.0003', 'Belanja BBM Kendaraan Dinas', 'bbm', 40000000)
+   '5.1.02.03.002.00035',
+   'Belanja Pemeliharaan Alat Angkutan-Alat Angkutan Darat Bermotor-Kendaraan Dinas Bermotor Perorangan',
+   'bbm', 30000000),
+  ('dddddddd-0004-0000-0000-000000000004', 'cccccccc-0002-0000-0000-000000000002',
+   '5.1.02.03.002.00038',
+   'Belanja Pemeliharaan Alat Angkutan-Alat Angkutan Darat Bermotor-Kendaraan Bermotor Beroda Dua',
+   'bbm', 12000000)
 on conflict do nothing;
 
 -- ---------------------------------------------------------
@@ -80,15 +86,22 @@ values
   ('eeeeeeee-0001-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000026',
    '11111111-1111-1111-1111-111111111111', 'kendaraan', '3.02.01.01.001', 'REG-0001',
    'Kendaraan Operasional Roda 4', 'Toyota', 'Innova Zenix', 2023, 380000000, 'baik',
-   'Garasi Kantor Dinas', 'Kepala Dinas')
+   'Garasi Kantor Dinas', 'Kepala Dinas'),
+  ('eeeeeeee-0002-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000026',
+   '11111111-1111-1111-1111-111111111111', 'kendaraan', '3.02.01.02.001', 'REG-0002',
+   'Kendaraan Operasional Roda 2', 'Honda', 'Vario 160', 2023, 26000000, 'baik',
+   'Garasi Kantor Dinas', 'Staf Lapangan')
 on conflict do nothing;
 
 insert into kendaraan (id, kib_id, nopol, nomor_rangka, nomor_mesin, nomor_bpkb, jenis_kendaraan,
-                        status, penanggung_jawab, unit_kerja)
+                        roda, status, penanggung_jawab, unit_kerja)
 values
   ('ffffffff-0001-0000-0000-000000000001', 'eeeeeeee-0001-0000-0000-000000000001',
    'N 1234 AB', 'MHFXX1234567890', 'DE1234567', 'BPKB-000123456', 'Minibus',
-   'aktif', 'Budi Santoso', 'Sekretariat')
+   'roda4', 'aktif', 'Budi Santoso', 'Sekretariat'),
+  ('ffffffff-0002-0000-0000-000000000002', 'eeeeeeee-0002-0000-0000-000000000002',
+   'N 5678 CD', 'MHFYY7654321098', 'DE7654321', 'BPKB-000654321', 'Sepeda Motor',
+   'roda2', 'aktif', 'Siti Aminah', 'Sekretariat')
 on conflict do nothing;
 
 -- ---------------------------------------------------------
@@ -108,9 +121,15 @@ values
    'aaaaaaaa-0000-0000-0000-000000000026', '2026-03-05', 'servis_rutin', 'Bengkel Resmi Toyota',
    'INV-2026-0088', 'Servis berkala 20.000 km', 850000, 450000, 20120);
 
-insert into bbm (kendaraan_id, belanja_id, tahun_anggaran_id, tanggal, jenis_bbm, nomor_kupon,
-                  liter, harga_per_liter, kilometer_awal, kilometer_akhir, pengemudi)
+insert into bbm (kendaraan_id, belanja_id, tahun_anggaran_id, tanggal, jenis_bbm,
+                  roda_kendaraan, jumlah_kupon, nilai_per_kupon,
+                  kilometer_awal, kilometer_akhir, pengemudi)
 values
   ('ffffffff-0001-0000-0000-000000000001', 'dddddddd-0003-0000-0000-000000000003',
-   'aaaaaaaa-0000-0000-0000-000000000026', '2026-03-12', 'pertamax', 'KUP-2026-000045',
-   40, 13500, 20120, 20410, 'Ahmad Yani');
+   'aaaaaaaa-0000-0000-0000-000000000026', '2026-03-12', 'pertamax',
+   'roda4', 5, 100000,
+   20120, 20410, 'Ahmad Yani'),
+  ('ffffffff-0002-0000-0000-000000000002', 'dddddddd-0004-0000-0000-000000000004',
+   'aaaaaaaa-0000-0000-0000-000000000026', '2026-03-14', 'pertalite',
+   'roda2', 2, 25000,
+   8410, 8460, 'Siti Aminah');
