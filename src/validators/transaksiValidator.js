@@ -52,10 +52,12 @@ export const JENIS_BBM_OPTIONS = [
   { value: 'lainnya', label: 'Lainnya' },
 ];
 
-// Nominal tetap per lembar Kupon BBM, ditentukan oleh klasifikasi roda
-// kendaraan (kendaraan.roda — lihat kibValidator.js RODA_OPTIONS).
-// R4: Rp 100.000/kupon — R2: Rp 25.000/kupon.
-export const KUPON_NOMINAL = { roda4: 100000, roda2: 25000 };
+// Nominal DEFAULT per lembar Kupon BBM (saran awal saat pengadaan pertama
+// kali diinput). Nilai sesungguhnya diinput MANUAL oleh admin di menu
+// Pengadaan Kupon BBM dan bisa berbeda tiap Tahun Anggaran mengikuti
+// fluktuasi harga BBM (lihat migrasi 0010) — konstanta ini HANYA dipakai
+// sebagai nilai bawaan pada form, bukan nilai yang dikunci/divalidasi.
+export const KUPON_NOMINAL_DEFAULT = { roda4: 100000, roda2: 25000 };
 export const RODA_LABEL = { roda4: 'Roda 4', roda2: 'Roda 2' };
 
 // Kode rekening belanja BBM, mengikuti klasifikasi roda kendaraan.

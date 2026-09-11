@@ -1,6 +1,6 @@
 import { listOpd } from '../services/opdService.js';
 import { getPengadaanKupon, upsertPengadaanKupon, listPenyerapanKupon } from '../services/kuponBbmService.js';
-import { KUPON_NOMINAL, RODA_LABEL } from '../validators/transaksiValidator.js';
+import { KUPON_NOMINAL_DEFAULT, RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 import { showToast } from '../utils/ui.js';
 
@@ -80,14 +80,20 @@ export async function renderPengadaanBbm(root, { tahunAnggaranId, profile }) {
     `;
 
     RODA_ORDER.forEach((roda) => {
-      const input = formSlot.querySelector(`#f-jumlah-${roda}`);
+      const jumlahInput = formSlot.querySelector(`#f-jumlah-${roda}`);
+      const nilaiInput = formSlot.querySelector(`#f-nilai-${roda}`);
       const ket = formSlot.querySelector(`#f-ket-${roda}`);
       const btn = formSlot.querySelector(`#f-save-${roda}`);
       if (!btn) return;
       btn.addEventListener('click', async () => {
-        const jumlahKupon = Number(input.value);
+        const jumlahKupon = Number(jumlahInput.value);
+        const nilaiPerKupon = Number(nilaiInput.value);
         if (!Number.isFinite(jumlahKupon) || jumlahKupon < 0 || !Number.isInteger(jumlahKupon)) {
           showToast('Jumlah Kupon harus berupa bilangan bulat dan tidak boleh negatif.', 'warning');
+          return;
+        }
+        if (!Number.isFinite(nilaiPerKupon) || nilaiPerKupon <= 0) {
+          showToast('Nilai per Kupon harus berupa angka lebih dari 0.', 'warning');
           return;
         }
         try {
@@ -97,6 +103,7 @@ export async function renderPengadaanBbm(root, { tahunAnggaranId, profile }) {
             opdId: currentOpdId,
             roda,
             jumlahKupon,
+            nilaiPerKupon,
             keterangan: ket.value.trim(),
           });
           showToast('Pengadaan Kupon BBM berhasil disimpan.', 'success');
@@ -110,7 +117,7 @@ export async function renderPengadaanBbm(root, { tahunAnggaranId, profile }) {
 }
 
 function rodaCardHtml(roda, existing, ringkasan, canWrite) {
-  const nominal = KUPON_NOMINAL[roda];
+  const nominal = ringkasan?.nilai_per_kupon ?? existing?.nilai_per_kupon ?? KUPON_NOMINAL_DEFAULT[roda];
   const label = RODA_LABEL[roda];
   const pengadaan = ringkasan?.kupon_pengadaan ?? existing?.jumlah_kupon ?? 0;
   const terpakai = ringkasan?.kupon_terpakai ?? 0;
@@ -125,7 +132,7 @@ function rodaCardHtml(roda, existing, ringkasan, canWrite) {
     <div class="kpi-card" style="grid-column: span 2; min-width:320px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
         <div class="kpi-card__label" style="font-size:14px;font-weight:700;">Kupon BBM ${label}</div>
-        <div style="font-size:12px;color:var(--gray-500);">${formatRupiah(nominal)}/lembar</div>
+        <div style="font-size:12px;color:var(--gray-500);">${formatRupiah(nominal)}/lembar${!existing ? ' (saran awal)' : ''}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
@@ -153,12 +160,14 @@ function rodaCardHtml(roda, existing, ringkasan, canWrite) {
 
       ${canWrite ? `
         <div class="inline-form" style="grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="field"><label>Ubah Jumlah Kupon Diadakan</label><input id="f-jumlah-${roda}" type="number" min="0" step="1" value="${existing?.jumlah_kupon ?? pengadaan}" /></div>
-          <div class="field"><label>Keterangan</label><input id="f-ket-${roda}" value="${escapeAttr(existing?.keterangan)}" /></div>
+          <div class="field"><label>Jumlah Kupon Diadakan</label><input id="f-jumlah-${roda}" type="number" min="0" step="1" value="${existing?.jumlah_kupon ?? pengadaan}" /></div>
+          <div class="field"><label>Nilai per Kupon (Rp)</label><input id="f-nilai-${roda}" type="number" min="1" step="1" value="${existing?.nilai_per_kupon ?? KUPON_NOMINAL_DEFAULT[roda]}" /></div>
+          <div class="field" style="grid-column:1/-1;"><label>Keterangan</label><input id="f-ket-${roda}" value="${escapeAttr(existing?.keterangan)}" placeholder="mis. penyesuaian mengikuti harga BBM per SK terbaru" /></div>
           <div class="field-actions" style="grid-column:1/-1;">
             <button class="btn btn-solid" id="f-save-${roda}">Simpan</button>
           </div>
         </div>
+        <p style="font-size:11.5px;color:var(--gray-500);margin-top:8px;">Nilai per Kupon bisa disesuaikan sewaktu-waktu (mis. mengikuti fluktuasi harga BBM). Perubahan hanya berlaku untuk transaksi BBM baru — transaksi yang sudah tercatat sebelumnya tidak ikut berubah.</p>
       ` : ''}
     </div>
   `;

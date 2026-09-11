@@ -1,6 +1,6 @@
 import { listBbm } from '../services/transaksiService.js';
 import { listPenyerapanKupon } from '../services/kuponBbmService.js';
-import { JENIS_BBM_OPTIONS, RODA_LABEL, KUPON_NOMINAL } from '../validators/transaksiValidator.js';
+import { JENIS_BBM_OPTIONS, RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 
 const BULAN_LABEL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -173,7 +173,7 @@ function renderKuponCards(slot, penyerapanRows) {
         const barColor = persentase >= 100 ? '#dc2626' : persentase >= 80 ? '#d97706' : '#0ea5e9';
         return `
           <div class="kpi-card" style="grid-column: span 2; min-width:300px;">
-            <div class="kpi-card__label" style="font-weight:700;margin-bottom:8px;">Kupon BBM ${RODA_LABEL[roda]} (${formatRupiah(KUPON_NOMINAL[roda])}/lembar)</div>
+            <div class="kpi-card__label" style="font-weight:700;margin-bottom:8px;">Kupon BBM ${RODA_LABEL[roda]}${t.pengadaan ? ` (rata-rata ${formatRupiah(Math.round(t.nilaiPengadaan / t.pengadaan))}/lembar)` : ''}</div>
             ${t.hasData ? `
               <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
                 <div><div style="font-size:11px;color:var(--gray-500);">Pengadaan</div><div style="font-weight:700;">${t.pengadaan} lembar</div><div style="font-size:11.5px;color:var(--gray-500);">${formatRupiah(t.nilaiPengadaan)}</div></div>

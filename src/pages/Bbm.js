@@ -1,5 +1,6 @@
 import { listBbm, createBbm, updateBbm, softDeleteBbm, listKendaraanOptions, resolveBbmBelanja } from '../services/transaksiService.js';
-import { JENIS_BBM_OPTIONS, KUPON_NOMINAL, RODA_LABEL } from '../validators/transaksiValidator.js';
+import { resolveNilaiPerKupon } from '../services/kuponBbmService.js';
+import { JENIS_BBM_OPTIONS, RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 import { showToast, confirmDialog } from '../utils/ui.js';
 
@@ -129,22 +130,32 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
 
     let resolvedBelanja = null; // { id, kode_rekening, nama_belanja } | null
     let currentRoda = null;
+    let currentNilaiPerKupon = null; // nominal aktif dari Pengadaan Kupon BBM (bisa berubah per Tahun Anggaran)
 
     function findKendaraan(id) { return kendaraanOptions.find((k) => k.id === id) || null; }
 
     async function onKendaraanChange() {
       const k = findKendaraan(kendaraanSelect.value);
       currentRoda = k?.roda || null;
+      const opdId = k?.kib?.opd_id || null;
 
       if (!currentRoda) {
         nilaiKuponPreview.value = '-';
+        currentNilaiPerKupon = null;
         belanjaInfoSlot.innerHTML = `<div class="alert alert--error">Kendaraan ini belum memiliki data Jenis Roda. Lengkapi terlebih dahulu di menu KIB Kendaraan sebelum mencatat BBM.</div>`;
         resolvedBelanja = null;
         updatePreview();
         return;
       }
 
-      nilaiKuponPreview.value = formatRupiah(KUPON_NOMINAL[currentRoda]);
+      nilaiKuponPreview.value = 'Memuat...';
+      try {
+        currentNilaiPerKupon = await resolveNilaiPerKupon(tahunAnggaranId, opdId, currentRoda);
+      } catch (e) {
+        currentNilaiPerKupon = null;
+      }
+      nilaiKuponPreview.value = currentNilaiPerKupon !== null ? formatRupiah(currentNilaiPerKupon) : 'Belum diatur';
+
       belanjaInfoSlot.innerHTML = `<div class="skeleton" style="height:38px;"></div>`;
       try {
         resolvedBelanja = await resolveBbmBelanja(tahunAnggaranId, currentRoda);
@@ -160,12 +171,15 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
         resolvedBelanja = null;
         belanjaInfoSlot.innerHTML = `<div class="alert alert--warning">Gagal memuat data Belanja. Anda tetap bisa menyimpan transaksi tanpa link Belanja.</div>`;
       }
+      if (currentNilaiPerKupon === null) {
+        belanjaInfoSlot.innerHTML += `<div class="alert alert--error">Belum ada Pengadaan Kupon BBM untuk ${escapeHtml(RODA_LABEL[currentRoda])} pada Tahun Anggaran berjalan. Input dulu nominal &amp; kuotanya di menu Kendaraan &gt; Pengadaan Kupon BBM sebelum mencatat transaksi ini.</div>`;
+      }
       updatePreview();
     }
 
     function updatePreview() {
       const jumlah = Number(jumlahKuponInput.value) || 0;
-      const nominal = currentRoda ? KUPON_NOMINAL[currentRoda] : 0;
+      const nominal = currentNilaiPerKupon || 0;
       nilaiPreview.value = formatRupiah(jumlah * nominal);
       const kmA = Number(kmAwalInput.value);
       const kmB = Number(kmAkhirInput.value);
@@ -182,6 +196,15 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
       if (!resolvedBelanja && existing.belanja?.id) {
         resolvedBelanja = { id: existing.belanja.id, kode_rekening: '(tersimpan)', nama_belanja: existing.belanja.nama_belanja };
       }
+      // Nilai per kupon adalah SNAPSHOT historis transaksi ini — selama
+      // kendaraan yang dipilih belum diganti, jangan timpa dengan nominal
+      // Pengadaan Kupon BBM yang berlaku SEKARANG (bisa saja sudah berubah
+      // karena fluktuasi harga BBM sejak transaksi ini dicatat).
+      if (kendaraanSelect.value === existing.kendaraan?.id && existing.nilai_per_kupon != null) {
+        currentNilaiPerKupon = Number(existing.nilai_per_kupon);
+        nilaiKuponPreview.value = `${formatRupiah(currentNilaiPerKupon)} (tersimpan saat transaksi)`;
+        updatePreview();
+      }
     }
 
     formSlot.querySelector('#f-cancel').addEventListener('click', () => { formSlot.innerHTML = ''; });
@@ -197,6 +220,7 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
 
       if (!tanggal || !kendaraan_id || !jenis_bbm) { showToast('Tanggal, Kendaraan, dan Jenis BBM wajib diisi.', 'warning'); return; }
       if (!currentRoda) { showToast('Kendaraan belum memiliki data Jenis Roda. Lengkapi di menu KIB Kendaraan terlebih dahulu.', 'warning'); return; }
+      if (currentNilaiPerKupon === null) { showToast('Belum ada Pengadaan Kupon BBM (nominal per kupon) untuk roda ini pada Tahun Anggaran berjalan. Input dulu di menu Pengadaan Kupon BBM.', 'warning'); return; }
       if (!Number.isInteger(jumlah_kupon) || jumlah_kupon <= 0) { showToast('Jumlah Kupon harus bilangan bulat lebih dari 0.', 'warning'); return; }
       if (kilometer_awal !== null && kilometer_akhir !== null && kilometer_akhir < kilometer_awal) {
         alertSlot.innerHTML = `<div class="alert alert--error">Kilometer Akhir tidak boleh lebih kecil dari Kilometer Awal. Periksa kembali odometer kendaraan.</div>`;
@@ -210,7 +234,7 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
         tanggal, jenis_bbm,
         roda_kendaraan: currentRoda,
         jumlah_kupon,
-        nilai_per_kupon: KUPON_NOMINAL[currentRoda],
+        nilai_per_kupon: currentNilaiPerKupon,
         kilometer_awal, kilometer_akhir,
         pengemudi: formSlot.querySelector('#f-pengemudi').value.trim() || null,
         keterangan: formSlot.querySelector('#f-ket').value.trim() || null,

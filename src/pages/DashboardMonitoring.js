@@ -1,5 +1,6 @@
 import { listPajak } from '../services/transaksiService.js';
 import { getRekapPerKendaraan } from '../services/monitoringService.js';
+import { getKuponSummaryTotals } from '../services/kuponBbmService.js';
 import { computeJatuhTempoStatus } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
 import { navigate } from '../router.js';
@@ -35,9 +36,10 @@ export async function renderDashboardMonitoring(root, { tahunAnggaranId }) {
   root.querySelectorAll('[data-nav]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.nav)));
 
   try {
-    const [pajakRows, rekapKendaraan] = await Promise.all([
+    const [pajakRows, rekapKendaraan, kupon] = await Promise.all([
       listPajak(tahunAnggaranId),
       getRekapPerKendaraan(tahunAnggaranId),
+      getKuponSummaryTotals(tahunAnggaranId),
     ]);
 
     const dueCounts = { lewat: 0, kritis: 0, perhatian: 0, perhatian_tinggi: 0 };
@@ -65,8 +67,14 @@ export async function renderDashboardMonitoring(root, { tahunAnggaranId }) {
         <div class="kpi-card__value">${rekapKendaraan.length}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-card__label">Total Kupon BBM Terpakai</div>
-        <div class="kpi-card__value">${rekapKendaraan.reduce((s, k) => s + Number(k.total_kupon), 0)}</div>
+        <div class="kpi-card__label">Realisasi Kupon BBM Terpakai</div>
+        <div class="kpi-card__value">${kupon.kuponTerpakai} lembar</div>
+        <div class="kpi-card__meta">dari pengadaan ${kupon.kuponPengadaan} lembar (${kupon.persentaseTerpakai}%)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__label">Sisa Kupon BBM Tersedia</div>
+        <div class="kpi-card__value" style="color:${kupon.kuponSisa < 0 ? 'var(--status-critical)' : 'inherit'};">${kupon.kuponSisa} lembar</div>
+        <div class="kpi-card__meta">${formatRupiah(kupon.nilaiSisa)}</div>
       </div>
     `;
 
@@ -108,6 +116,6 @@ export async function renderDashboardMonitoring(root, { tahunAnggaranId }) {
 }
 
 function skeletonCards() {
-  return Array.from({ length: 4 }).map(() => `<div class="kpi-card"><div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:22px;width:80%;"></div></div>`).join('');
+  return Array.from({ length: 5 }).map(() => `<div class="kpi-card"><div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:22px;width:80%;"></div></div>`).join('');
 }
 function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }

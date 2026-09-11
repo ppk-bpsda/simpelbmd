@@ -1,4 +1,5 @@
 import { getRingkasanAnggaran, getRingkasanPerJenisBelanja, getPenyerapanBulanan } from '../services/dashboardService.js';
+import { getKuponSummaryTotals } from '../services/kuponBbmService.js';
 import { renderMonthlyAbsorptionChart } from '../charts/monthlyAbsorptionChart.js';
 import { formatRupiah, formatPercent, clampPercent } from '../utils/format.js';
 
@@ -22,10 +23,20 @@ export async function renderDashboard(root, { tahunAnggaranId }) {
       <div class="panel__header">
         <div>
           <div class="panel__title">Ringkasan per Jenis Belanja</div>
-          <div class="panel__subtitle">Pajak/Perijinan • Pemeliharaan • BBM/Kupon BBM</div>
+          <div class="panel__subtitle">Pajak/Perijinan • Pemeliharaan • BBM/Kupon BBM (anggaran rupiah)</div>
         </div>
       </div>
       <div id="jenis-belanja-slot" class="kpi-grid"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <div class="panel__title">Realisasi &amp; Sisa Kupon BBM</div>
+          <div class="panel__subtitle">Penyerapan lembar kupon terhadap pengadaan Tahun Anggaran berjalan</div>
+        </div>
+      </div>
+      <div id="kupon-slot" class="kpi-grid"></div>
     </div>
   `;
 
@@ -38,10 +49,11 @@ export async function renderDashboard(root, { tahunAnggaranId }) {
   }
 
   try {
-    const [ringkasan, jenisBelanja, bulanan] = await Promise.all([
+    const [ringkasan, jenisBelanja, bulanan, kupon] = await Promise.all([
       getRingkasanAnggaran(tahunAnggaranId),
       getRingkasanPerJenisBelanja(tahunAnggaranId),
       getPenyerapanBulanan(tahunAnggaranId),
+      getKuponSummaryTotals(tahunAnggaranId),
     ]);
 
     root.querySelector('#kpi-slot').innerHTML = `
@@ -66,6 +78,25 @@ export async function renderDashboard(root, { tahunAnggaranId }) {
             </div>`
         )
         .join('');
+    }
+
+    const kuponSlot = root.querySelector('#kupon-slot');
+    if (!kupon.adaData) {
+      kuponSlot.innerHTML = emptyState('Belum ada Pengadaan Kupon BBM', 'Kuota lembar kupon belum diinput. Tambahkan di menu Kendaraan > Pengadaan Kupon BBM.');
+    } else {
+      kuponSlot.innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-card__label">Realisasi BBM (Kupon)</div>
+          <div class="kpi-card__value">${kupon.kuponTerpakai} lembar</div>
+          <div class="kpi-card__meta">${formatRupiah(kupon.nilaiTerpakai)} dari pengadaan ${kupon.kuponPengadaan} lembar (${formatRupiah(kupon.nilaiPengadaan)})</div>
+          <div class="progress-track"><div class="progress-fill" style="width:${clampPercent(kupon.persentaseTerpakai)}%"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Sisa Kupon BBM Tersedia</div>
+          <div class="kpi-card__value" style="color:${kupon.kuponSisa < 0 ? 'var(--status-critical)' : 'inherit'};">${kupon.kuponSisa} lembar</div>
+          <div class="kpi-card__meta">${formatRupiah(kupon.nilaiSisa)}</div>
+        </div>
+      `;
     }
 
     const canvas = root.querySelector('#monthly-chart');
