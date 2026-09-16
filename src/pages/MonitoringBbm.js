@@ -196,4 +196,16 @@ function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTi
 function jenisLabel(v) { return (JENIS_BBM_OPTIONS.find((j) => j.value === v) || {}).label || v; }
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('id-ID') : '-'; }
 function skeletonCards() { return Array.from({ length: 4 }).map(() => `<div class="kpi-card"><div class="skeleton" style="height:12px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:22px;width:80%;"></div></div>`).join(''); }
+function skeletonKuponCards() {
+  return `<div class="kpi-grid">${RODA_ORDER.map(() => `
+    <div class="kpi-card" style="grid-column: span 2; min-width:300px;">
+      <div class="skeleton" style="height:12px;width:55%;margin-bottom:12px;"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+        <div class="skeleton" style="height:32px;"></div>
+        <div class="skeleton" style="height:32px;"></div>
+        <div class="skeleton" style="height:32px;"></div>
+      </div>
+      <div class="skeleton" style="height:8px;"></div>
+    </div>`).join('')}</div>`;
+}
 function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }

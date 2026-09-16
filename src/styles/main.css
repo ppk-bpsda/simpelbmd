@@ -383,3 +383,81 @@ button { font-family: inherit; }
   .sidebar { display: none; }
   .content { padding: 16px; }
 }
+
+/* =========================================================
+   MODAL FORM (Tambah / Edit data)
+   Dipakai oleh KIB Kendaraan & KIB Peralatan/Aset agar user
+   tidak perlu menggulung layar ke atas saat menekan "Edit".
+   ========================================================= */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(11, 18, 32, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+  animation: modal-fade 0.14s ease-out;
+}
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: modal-rise 0.16s ease-out;
+}
+@keyframes modal-rise { from { transform: translateY(12px) scale(0.99); } to { transform: none; } }
+
+.modal__header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 18px 22px; border-bottom: 1px solid var(--gray-100);
+  background: var(--white); flex-shrink: 0;
+}
+.modal__title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+.modal__subtitle { font-size: 12.5px; color: var(--gray-500); margin-top: 3px; }
+.modal__close {
+  background: none; border: none; cursor: pointer;
+  font-size: 26px; line-height: 1; color: var(--gray-400);
+  padding: 0 4px; border-radius: var(--radius-sm);
+}
+.modal__close:hover { color: var(--gray-900); background: var(--gray-50); }
+
+.modal__body { padding: 20px 22px; overflow-y: auto; flex: 1 1 auto; }
+
+.modal__footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 14px 22px; border-top: 1px solid var(--gray-100);
+  background: var(--gray-50); flex-shrink: 0;
+}
+.modal__hint { font-size: 11.5px; color: var(--gray-500); }
+.modal__hint kbd {
+  font-family: var(--font-ui); font-size: 10.5px; font-weight: 600;
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: 4px; padding: 1px 5px; color: var(--gray-700);
+}
+
+/* Grid isian di dalam modal — tanpa background abu & border putus-putus
+   seperti .inline-form, karena modal sudah punya kanvasnya sendiri. */
+.modal-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.modal-form .field { margin-bottom: 0; }
+.modal-form .field--wide { grid-column: 1 / -1; }
+
+.form-section { grid-column: 1 / -1; margin-top: 6px; }
+.form-section:first-child { margin-top: 0; }
+.form-section__title {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gray-500); padding-bottom: 7px; border-bottom: 1px solid var(--gray-100);
+}
+
+/* Baris tabel yang sedang dibuka di modal ditandai agar user tidak
+   kehilangan konteks posisi setelah modal ditutup. */
+.data-table tbody tr.is-editing { background: var(--status-info-bg); }
+
+@media (max-width: 640px) {
+  .modal-overlay { padding: 0; align-items: stretch; }
+  .modal { max-height: 100vh; height: 100%; border-radius: 0; }
+  .modal__hint { display: none; }
+  .modal__footer { justify-content: flex-end; }
+}

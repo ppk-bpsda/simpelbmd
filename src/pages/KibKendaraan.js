@@ -2,7 +2,7 @@ import { listKendaraan, createKendaraan, updateKendaraan, softDeleteKendaraan } 
 import { listOpd } from '../services/opdService.js';
 import { KONDISI_OPTIONS, RODA_OPTIONS } from '../validators/kibValidator.js';
 import { formatRupiah } from '../utils/format.js';
-import { showToast, confirmDialog } from '../utils/ui.js';
+import { showToast, confirmDialog, openFormModal } from '../utils/ui.js';
 
 export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
   if (!tahunAnggaranId) {
@@ -24,13 +24,11 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
       </div>
     </div>
     <div class="panel">
-      <div id="form-slot"></div>
       <div id="table-slot">${loadingRows()}</div>
     </div>
   `;
 
   const tableSlot = root.querySelector('#table-slot');
-  const formSlot = root.querySelector('#form-slot');
 
   let opdOptions = [];
   if (profile.role === 'super_admin') {
@@ -75,8 +73,21 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
 
       tableSlot.querySelectorAll('[data-edit-id]').forEach((el) => {
         const row = rows.find((r) => r.id === el.dataset.editId);
-        el.addEventListener('click', () => openForm(row));
+        el.addEventListener('click', () => openForm(row, el.closest('tr')));
       });
+      // Klik di mana saja pada baris juga membuka form edit — user tidak perlu
+      // membidik tombol "Edit" yang kecil di ujung kanan tabel.
+      if (canWrite) {
+        tableSlot.querySelectorAll('tbody tr').forEach((tr) => {
+          tr.style.cursor = 'pointer';
+          tr.title = 'Klik dua kali untuk mengedit';
+          tr.addEventListener('dblclick', () => {
+            const btn = tr.querySelector('[data-edit-id]');
+            if (!btn) return;
+            openForm(rows.find((r) => r.id === btn.dataset.editId), tr);
+          });
+        });
+      }
       tableSlot.querySelectorAll('[data-delete-id]').forEach((el) => {
         el.addEventListener('click', async () => {
           const ok = await confirmDialog({
@@ -98,26 +109,34 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
     }
   }
 
-  function openForm(existing = null) {
+  function openForm(existing = null, triggerRow = null) {
     const k = existing?.kib || {};
+    if (triggerRow) triggerRow.classList.add('is-editing');
+
     const opdFieldHtml = profile.role === 'super_admin'
       ? `<div class="field"><label>OPD</label><select id="f-opd">${opdOptions.map((o) => `<option value="${o.id}" ${o.id === k.opd_id ? 'selected' : ''}>${escapeHtml(o.nama_opd)}</option>`).join('')}</select></div>`
       : '';
 
-    formSlot.innerHTML = `
-      <div class="inline-form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
-        <div class="field"><label>Nopol *</label><input id="f-nopol" value="${escapeAttr(existing?.nopol)}" style="text-transform:uppercase;" /></div>
-        <div class="field"><label>Nama Barang *</label><input id="f-nama" value="${escapeAttr(k.nama_barang)}" /></div>
-        <div class="field"><label>Merk</label><input id="f-merk" value="${escapeAttr(k.merk)}" /></div>
-        <div class="field"><label>Type</label><input id="f-type" value="${escapeAttr(k.type)}" /></div>
-        <div class="field"><label>Jenis Kendaraan</label><input id="f-jenis" value="${escapeAttr(existing?.jenis_kendaraan)}" /></div>
+    const bodyHtml = `
+      <div class="modal-form">
+        <div class="form-section"><div class="form-section__title">Identitas Kendaraan</div></div>
+        <div class="field"><label>Nopol *</label><input id="f-nopol" value="${escapeAttr(existing?.nopol)}" style="text-transform:uppercase;" placeholder="mis. N 1234 AB" /></div>
         <div class="field"><label>Jenis Roda *</label>
           <select id="f-roda">
             <option value="">— Pilih —</option>
             ${RODA_OPTIONS.map((o) => `<option value="${o.value}" ${existing?.roda === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
           </select>
-          <small style="color:var(--gray-500);">Menentukan nominal Kupon BBM &amp; rekening belanja BBM otomatis.</small>
+          <small style="color:var(--gray-500);font-size:11.5px;">Menentukan nominal Kupon BBM &amp; rekening belanja BBM otomatis.</small>
         </div>
+        <div class="field"><label>Jenis Kendaraan</label><input id="f-jenis" value="${escapeAttr(existing?.jenis_kendaraan)}" /></div>
+        <div class="field"><label>Nomor Rangka</label><input id="f-rangka" value="${escapeAttr(existing?.nomor_rangka)}" style="text-transform:uppercase;" /></div>
+        <div class="field"><label>Nomor Mesin</label><input id="f-mesin" value="${escapeAttr(existing?.nomor_mesin)}" style="text-transform:uppercase;" /></div>
+        <div class="field"><label>Nomor BPKB</label><input id="f-bpkb" value="${escapeAttr(existing?.nomor_bpkb)}" /></div>
+
+        <div class="form-section"><div class="form-section__title">Data KIB</div></div>
+        <div class="field"><label>Nama Barang *</label><input id="f-nama" value="${escapeAttr(k.nama_barang)}" /></div>
+        <div class="field"><label>Merk</label><input id="f-merk" value="${escapeAttr(k.merk)}" /></div>
+        <div class="field"><label>Type</label><input id="f-type" value="${escapeAttr(k.type)}" /></div>
         <div class="field"><label>Kode Barang</label><input id="f-kodebarang" value="${escapeAttr(k.kode_barang)}" /></div>
         <div class="field"><label>Register</label><input id="f-register" value="${escapeAttr(k.register)}" /></div>
         <div class="field"><label>Tahun Perolehan</label><input id="f-tahun" type="number" value="${k.tahun_perolehan || ''}" /></div>
@@ -128,58 +147,61 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
             ${KONDISI_OPTIONS.map((o) => `<option value="${o.value}" ${k.kondisi === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
           </select>
         </div>
+
+        <div class="form-section"><div class="form-section__title">Penempatan &amp; Penanggung Jawab</div></div>
         <div class="field"><label>Lokasi</label><input id="f-lokasi" value="${escapeAttr(k.lokasi)}" /></div>
         <div class="field"><label>Pengguna</label><input id="f-pengguna" value="${escapeAttr(k.pengguna)}" /></div>
-        <div class="field"><label>Nomor Rangka</label><input id="f-rangka" value="${escapeAttr(existing?.nomor_rangka)}" style="text-transform:uppercase;" /></div>
-        <div class="field"><label>Nomor Mesin</label><input id="f-mesin" value="${escapeAttr(existing?.nomor_mesin)}" style="text-transform:uppercase;" /></div>
-        <div class="field"><label>Nomor BPKB</label><input id="f-bpkb" value="${escapeAttr(existing?.nomor_bpkb)}" /></div>
         <div class="field"><label>Penanggung Jawab</label><input id="f-pj" value="${escapeAttr(existing?.penanggung_jawab)}" /></div>
         <div class="field"><label>Unit Kerja</label><input id="f-unit" value="${escapeAttr(existing?.unit_kerja)}" /></div>
         ${opdFieldHtml}
-        <div class="field-actions">
-          <button class="btn btn-solid" id="f-save">${existing ? 'Simpan Perubahan' : 'Simpan'}</button>
-          <button class="btn btn-outline" id="f-cancel">Batal</button>
-        </div>
       </div>
     `;
 
-    formSlot.querySelector('#f-cancel').addEventListener('click', () => { formSlot.innerHTML = ''; });
-    formSlot.querySelector('#f-save').addEventListener('click', async () => {
-      const nopol = formSlot.querySelector('#f-nopol').value.trim().toUpperCase();
-      const nama_barang = formSlot.querySelector('#f-nama').value.trim();
-      const roda = formSlot.querySelector('#f-roda').value || null;
-      if (!nopol || !nama_barang) { showToast('Nopol dan Nama Barang wajib diisi.', 'warning'); return; }
-      if (!roda) { showToast('Jenis Roda wajib dipilih (menentukan nominal Kupon BBM).', 'warning'); return; }
+    const modal = openFormModal({
+      title: existing ? 'Edit Kendaraan' : 'Tambah Kendaraan',
+      subtitle: existing
+        ? `${escapeHtml(existing.nopol || '-')} — ${escapeHtml(k.nama_barang || 'Tanpa nama barang')}`
+        : 'Lengkapi data kendaraan dinas/operasional baru.',
+      bodyHtml,
+      saveLabel: existing ? 'Simpan Perubahan' : 'Simpan',
+      onSave: async (body) => {
+        const val = (sel) => body.querySelector(sel).value.trim();
+        const nopol = val('#f-nopol').toUpperCase();
+        const nama_barang = val('#f-nama');
+        const roda = body.querySelector('#f-roda').value || null;
 
-      const opdSelect = formSlot.querySelector('#f-opd');
-      const opdId = opdSelect ? opdSelect.value : profile.opd_id;
+        if (!nopol) { showToast('Nopol wajib diisi.', 'warning'); body.querySelector('#f-nopol').focus(); return false; }
+        if (!nama_barang) { showToast('Nama Barang wajib diisi.', 'warning'); body.querySelector('#f-nama').focus(); return false; }
+        if (!roda) { showToast('Jenis Roda wajib dipilih (menentukan nominal Kupon BBM).', 'warning'); body.querySelector('#f-roda').focus(); return false; }
 
-      const payload = {
-        kib: {
-          nama_barang,
-          merk: formSlot.querySelector('#f-merk').value.trim(),
-          type: formSlot.querySelector('#f-type').value.trim(),
-          kode_barang: formSlot.querySelector('#f-kodebarang').value.trim(),
-          register: formSlot.querySelector('#f-register').value.trim(),
-          tahun_perolehan: Number(formSlot.querySelector('#f-tahun').value) || null,
-          nilai_perolehan: Number(formSlot.querySelector('#f-nilai').value) || null,
-          kondisi: formSlot.querySelector('#f-kondisi').value || null,
-          lokasi: formSlot.querySelector('#f-lokasi').value.trim(),
-          pengguna: formSlot.querySelector('#f-pengguna').value.trim(),
-        },
-        kendaraan: {
-          nopol,
-          nomor_rangka: formSlot.querySelector('#f-rangka').value.trim().toUpperCase(),
-          nomor_mesin: formSlot.querySelector('#f-mesin').value.trim().toUpperCase(),
-          nomor_bpkb: formSlot.querySelector('#f-bpkb').value.trim(),
-          jenis_kendaraan: formSlot.querySelector('#f-jenis').value.trim(),
-          roda,
-          penanggung_jawab: formSlot.querySelector('#f-pj').value.trim(),
-          unit_kerja: formSlot.querySelector('#f-unit').value.trim(),
-        },
-      };
+        const opdSelect = body.querySelector('#f-opd');
+        const opdId = opdSelect ? opdSelect.value : profile.opd_id;
 
-      try {
+        const payload = {
+          kib: {
+            nama_barang,
+            merk: val('#f-merk'),
+            type: val('#f-type'),
+            kode_barang: val('#f-kodebarang'),
+            register: val('#f-register'),
+            tahun_perolehan: Number(val('#f-tahun')) || null,
+            nilai_perolehan: Number(val('#f-nilai')) || null,
+            kondisi: body.querySelector('#f-kondisi').value || null,
+            lokasi: val('#f-lokasi'),
+            pengguna: val('#f-pengguna'),
+          },
+          kendaraan: {
+            nopol,
+            nomor_rangka: val('#f-rangka').toUpperCase(),
+            nomor_mesin: val('#f-mesin').toUpperCase(),
+            nomor_bpkb: val('#f-bpkb'),
+            jenis_kendaraan: val('#f-jenis'),
+            roda,
+            penanggung_jawab: val('#f-pj'),
+            unit_kerja: val('#f-unit'),
+          },
+        };
+
         if (existing) {
           await updateKendaraan(existing.id, existing.kib.id, payload);
           showToast('Perubahan berhasil disimpan.', 'success');
@@ -187,10 +209,12 @@ export async function renderKibKendaraan(root, { tahunAnggaranId, profile }) {
           await createKendaraan({ tahunAnggaranId, opdId, ...payload });
           showToast('Kendaraan baru berhasil ditambahkan.', 'success');
         }
-        formSlot.innerHTML = '';
         refresh();
-      } catch (err) { showToast(err.message, 'error'); }
+      },
+      onClose: () => { if (triggerRow) triggerRow.classList.remove('is-editing'); },
     });
+
+    return modal;
   }
 
   if (canWrite) root.querySelector('#btn-add').addEventListener('click', () => openForm());
