@@ -2,7 +2,7 @@ import { listPemeliharaan, createPemeliharaan, updatePemeliharaan, softDeletePem
 import { JENIS_PEMELIHARAAN_OPTIONS } from '../validators/transaksiValidator.js';
 import { mountBelanjaPicker } from '../components/BelanjaPicker.js';
 import { formatRupiah } from '../utils/format.js';
-import { showToast, confirmDialog } from '../utils/ui.js';
+import { showToast, confirmDialog, openFormModal } from '../utils/ui.js';
 
 export async function renderPemeliharaan(root, { tahunAnggaranId, profile }) {
   if (!tahunAnggaranId) {
@@ -23,13 +23,11 @@ export async function renderPemeliharaan(root, { tahunAnggaranId, profile }) {
       </div>
     </div>
     <div class="panel">
-      <div id="form-slot"></div>
       <div id="table-slot">${loadingRows()}</div>
     </div>
   `;
 
   const tableSlot = root.querySelector('#table-slot');
-  const formSlot = root.querySelector('#form-slot');
 
   let kendaraanOptions = [];
   try { kendaraanOptions = await listKendaraanOptions(tahunAnggaranId); } catch (e) { /* non-fatal */ }
@@ -72,8 +70,19 @@ export async function renderPemeliharaan(root, { tahunAnggaranId, profile }) {
       `;
       tableSlot.querySelectorAll('[data-edit-id]').forEach((el) => {
         const row = rows.find((r) => r.id === el.dataset.editId);
-        el.addEventListener('click', () => openForm(row));
+        el.addEventListener('click', () => openForm(row, el.closest('tr')));
       });
+      if (canWrite) {
+        tableSlot.querySelectorAll('tbody tr').forEach((tr) => {
+          tr.style.cursor = 'pointer';
+          tr.title = 'Klik dua kali untuk mengedit';
+          tr.addEventListener('dblclick', () => {
+            const btn = tr.querySelector('[data-edit-id]');
+            if (!btn) return;
+            openForm(rows.find((r) => r.id === btn.dataset.editId), tr);
+          });
+        });
+      }
       tableSlot.querySelectorAll('[data-delete-id]').forEach((el) => {
         el.addEventListener('click', async () => {
           const ok = await confirmDialog({ title: 'Hapus Transaksi?', message: 'Data akan dipindahkan ke arsip.', danger: true });
@@ -87,13 +96,15 @@ export async function renderPemeliharaan(root, { tahunAnggaranId, profile }) {
     }
   }
 
-  async function openForm(existing = null) {
+  async function openForm(existing = null, triggerRow = null) {
     if (!kendaraanOptions.length) {
       showToast('Belum ada data Kendaraan. Tambahkan Kendaraan terlebih dahulu di menu KIB Kendaraan.', 'warning');
       return;
     }
-    formSlot.innerHTML = `
-      <div class="inline-form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+    if (triggerRow) triggerRow.classList.add('is-editing');
+
+    const bodyHtml = `
+      <div class="modal-form">
         <div class="field"><label>Tanggal *</label><input id="f-tanggal" type="date" value="${existing?.tanggal || todayStr()}" /></div>
         <div class="field"><label>Kendaraan (Nopol) *</label>
           <select id="f-kendaraan">${kendaraanOptions.map((k) => `<option value="${k.id}" ${existing?.kendaraan?.id === k.id ? 'selected' : ''}>${escapeHtml(k.nopol)} — ${escapeHtml(k.kib?.nama_barang || '')}</option>`).join('')}</select>
@@ -110,23 +121,54 @@ export async function renderPemeliharaan(root, { tahunAnggaranId, profile }) {
           <label>Total (otomatis)</label>
           <input id="f-total-preview" value="${formatRupiah((existing?.sparepart || 0) + (existing?.jasa || 0))}" disabled style="background:var(--gray-100);font-weight:700;" />
         </div>
-        <div class="field" style="grid-column:1/-1;"><label>Uraian</label><input id="f-uraian" value="${escapeAttr(existing?.uraian)}" /></div>
-        <div id="belanja-picker-slot" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;"></div>
-        <div class="field" style="grid-column:1/-1;"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
-        <div class="field-actions">
-          <button class="btn btn-solid" id="f-save">${existing ? 'Simpan Perubahan' : 'Simpan'}</button>
-          <button class="btn btn-outline" id="f-cancel">Batal</button>
-        </div>
+        <div class="field field--wide"><label>Uraian</label><input id="f-uraian" value="${escapeAttr(existing?.uraian)}" /></div>
+        <div class="field field--wide"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
+        <div class="form-section"><div class="form-section__title">Belanja Terkait</div></div>
+        <div id="belanja-picker-slot" class="field--wide" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;"></div>
       </div>
     `;
 
-    const picker = await mountBelanjaPicker(formSlot.querySelector('#belanja-picker-slot'), {
-      tahunAnggaranId, kelompok: 'pemeliharaan', selectedBelanjaId: existing?.belanja?.id || null,
+    const modal = openFormModal({
+      title: existing ? 'Edit Pemeliharaan' : 'Tambah Transaksi Pemeliharaan',
+      subtitle: existing
+        ? `${escapeHtml(existing.kendaraan?.nopol || '-')} — ${(JENIS_PEMELIHARAAN_OPTIONS.find((j) => j.value === existing.jenis) || {}).label || ''}`
+        : 'Catat transaksi servis/pemeliharaan kendaraan baru.',
+      bodyHtml,
+      saveLabel: existing ? 'Simpan Perubahan' : 'Simpan',
+      onSave: async (body) => {
+        const tanggal = body.querySelector('#f-tanggal').value;
+        const kendaraan_id = body.querySelector('#f-kendaraan').value;
+        const jenis = body.querySelector('#f-jenis').value;
+        const sparepart = Number(body.querySelector('#f-sparepart').value) || 0;
+        const jasa = Number(body.querySelector('#f-jasa').value) || 0;
+
+        if (!tanggal || !kendaraan_id || !jenis) { showToast('Tanggal, Kendaraan, dan Jenis wajib diisi.', 'warning'); return false; }
+        if (sparepart < 0 || jasa < 0) { showToast('Biaya tidak boleh negatif.', 'warning'); return false; }
+
+        const payload = {
+          tahun_anggaran_id: tahunAnggaranId,
+          kendaraan_id,
+          belanja_id: picker.getValue(),
+          tanggal,
+          jenis,
+          bengkel: body.querySelector('#f-bengkel').value.trim() || null,
+          nomor_dokumen: body.querySelector('#f-nodok').value.trim() || null,
+          uraian: body.querySelector('#f-uraian').value.trim() || null,
+          sparepart, jasa,
+          kilometer: body.querySelector('#f-km').value ? Number(body.querySelector('#f-km').value) : null,
+          keterangan: body.querySelector('#f-ket').value.trim() || null,
+        };
+
+        if (existing) { await updatePemeliharaan(existing.id, payload); showToast('Perubahan berhasil disimpan.', 'success'); }
+        else { await createPemeliharaan(payload); showToast('Transaksi baru berhasil ditambahkan.', 'success'); }
+        refresh();
+      },
+      onClose: () => { if (triggerRow) triggerRow.classList.remove('is-editing'); },
     });
 
-    const sparepartInput = formSlot.querySelector('#f-sparepart');
-    const jasaInput = formSlot.querySelector('#f-jasa');
-    const totalPreview = formSlot.querySelector('#f-total-preview');
+    const sparepartInput = modal.body.querySelector('#f-sparepart');
+    const jasaInput = modal.body.querySelector('#f-jasa');
+    const totalPreview = modal.body.querySelector('#f-total-preview');
     function updateTotalPreview() {
       const total = (Number(sparepartInput.value) || 0) + (Number(jasaInput.value) || 0);
       totalPreview.value = formatRupiah(total);
@@ -134,37 +176,8 @@ export async function renderPemeliharaan(root, { tahunAnggaranId, profile }) {
     sparepartInput.addEventListener('input', updateTotalPreview);
     jasaInput.addEventListener('input', updateTotalPreview);
 
-    formSlot.querySelector('#f-cancel').addEventListener('click', () => { formSlot.innerHTML = ''; });
-    formSlot.querySelector('#f-save').addEventListener('click', async () => {
-      const tanggal = formSlot.querySelector('#f-tanggal').value;
-      const kendaraan_id = formSlot.querySelector('#f-kendaraan').value;
-      const jenis = formSlot.querySelector('#f-jenis').value;
-      const sparepart = Number(sparepartInput.value) || 0;
-      const jasa = Number(jasaInput.value) || 0;
-
-      if (!tanggal || !kendaraan_id || !jenis) { showToast('Tanggal, Kendaraan, dan Jenis wajib diisi.', 'warning'); return; }
-      if (sparepart < 0 || jasa < 0) { showToast('Biaya tidak boleh negatif.', 'warning'); return; }
-
-      const payload = {
-        tahun_anggaran_id: tahunAnggaranId,
-        kendaraan_id,
-        belanja_id: picker.getValue(),
-        tanggal,
-        jenis,
-        bengkel: formSlot.querySelector('#f-bengkel').value.trim() || null,
-        nomor_dokumen: formSlot.querySelector('#f-nodok').value.trim() || null,
-        uraian: formSlot.querySelector('#f-uraian').value.trim() || null,
-        sparepart, jasa,
-        kilometer: formSlot.querySelector('#f-km').value ? Number(formSlot.querySelector('#f-km').value) : null,
-        keterangan: formSlot.querySelector('#f-ket').value.trim() || null,
-      };
-
-      try {
-        if (existing) { await updatePemeliharaan(existing.id, payload); showToast('Perubahan berhasil disimpan.', 'success'); }
-        else { await createPemeliharaan(payload); showToast('Transaksi baru berhasil ditambahkan.', 'success'); }
-        formSlot.innerHTML = '';
-        refresh();
-      } catch (err) { showToast(err.message, 'error'); }
+    const picker = await mountBelanjaPicker(modal.body.querySelector('#belanja-picker-slot'), {
+      tahunAnggaranId, kelompok: 'pemeliharaan', selectedBelanjaId: existing?.belanja?.id || null,
     });
   }
 

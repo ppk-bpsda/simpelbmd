@@ -2,7 +2,7 @@ import { listBbm, createBbm, updateBbm, softDeleteBbm, listKendaraanOptions, res
 import { resolveNilaiPerKupon } from '../services/kuponBbmService.js';
 import { JENIS_BBM_OPTIONS, RODA_LABEL } from '../validators/transaksiValidator.js';
 import { formatRupiah } from '../utils/format.js';
-import { showToast, confirmDialog } from '../utils/ui.js';
+import { showToast, confirmDialog, openFormModal } from '../utils/ui.js';
 
 export async function renderBbm(root, { tahunAnggaranId, profile }) {
   if (!tahunAnggaranId) {
@@ -23,13 +23,11 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
       </div>
     </div>
     <div class="panel">
-      <div id="form-slot"></div>
       <div id="table-slot">${loadingRows()}</div>
     </div>
   `;
 
   const tableSlot = root.querySelector('#table-slot');
-  const formSlot = root.querySelector('#form-slot');
 
   let kendaraanOptions = [];
   try { kendaraanOptions = await listKendaraanOptions(tahunAnggaranId); } catch (e) { /* non-fatal */ }
@@ -73,8 +71,19 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
       `;
       tableSlot.querySelectorAll('[data-edit-id]').forEach((el) => {
         const row = rows.find((r) => r.id === el.dataset.editId);
-        el.addEventListener('click', () => openForm(row));
+        el.addEventListener('click', () => openForm(row, el.closest('tr')));
       });
+      if (canWrite) {
+        tableSlot.querySelectorAll('tbody tr').forEach((tr) => {
+          tr.style.cursor = 'pointer';
+          tr.title = 'Klik dua kali untuk mengedit';
+          tr.addEventListener('dblclick', () => {
+            const btn = tr.querySelector('[data-edit-id]');
+            if (!btn) return;
+            openForm(rows.find((r) => r.id === btn.dataset.editId), tr);
+          });
+        });
+      }
       tableSlot.querySelectorAll('[data-delete-id]').forEach((el) => {
         el.addEventListener('click', async () => {
           const ok = await confirmDialog({ title: 'Hapus Transaksi?', message: 'Data akan dipindahkan ke arsip.', danger: true });
@@ -88,13 +97,15 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
     }
   }
 
-  async function openForm(existing = null) {
+  async function openForm(existing = null, triggerRow = null) {
     if (!kendaraanOptions.length) {
       showToast('Belum ada data Kendaraan. Tambahkan Kendaraan terlebih dahulu di menu KIB Kendaraan.', 'warning');
       return;
     }
-    formSlot.innerHTML = `
-      <div class="inline-form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+    if (triggerRow) triggerRow.classList.add('is-editing');
+
+    const bodyHtml = `
+      <div class="modal-form">
         <div class="field"><label>Tanggal *</label><input id="f-tanggal" type="date" value="${existing?.tanggal || todayStr()}" /></div>
         <div class="field"><label>Kendaraan (Nopol) *</label>
           <select id="f-kendaraan">${kendaraanOptions.map((k) => `<option value="${k.id}" ${existing?.kendaraan?.id === k.id ? 'selected' : ''}>${escapeHtml(k.nopol)} — ${escapeHtml(k.kib?.nama_barang || '')}</option>`).join('')}</select>
@@ -109,24 +120,66 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
         <div class="field"><label>Kilometer Akhir</label><input id="f-kmakhir" type="number" min="0" value="${existing?.kilometer_akhir ?? ''}" /></div>
         <div class="field"><label>Jarak Tempuh (otomatis)</label><input id="f-jarak-preview" value="${existing?.jarak_tempuh ?? '-'}" disabled style="background:var(--gray-100);" /></div>
         <div class="field"><label>Pengemudi</label><input id="f-pengemudi" value="${escapeAttr(existing?.pengemudi)}" /></div>
-        <div id="belanja-info-slot" style="grid-column:1/-1;"></div>
-        <div class="field" style="grid-column:1/-1;"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
-        <div class="field-actions">
-          <button class="btn btn-solid" id="f-save">${existing ? 'Simpan Perubahan' : 'Simpan'}</button>
-          <button class="btn btn-outline" id="f-cancel">Batal</button>
-        </div>
+        <div class="field field--wide"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
+        <div id="belanja-info-slot" class="field--wide"></div>
       </div>
-      <div id="form-alert"></div>
+      <div id="form-alert" style="margin-top:12px;"></div>
     `;
 
-    const kendaraanSelect = formSlot.querySelector('#f-kendaraan');
-    const jumlahKuponInput = formSlot.querySelector('#f-jumlah-kupon');
-    const nilaiKuponPreview = formSlot.querySelector('#f-nilai-kupon-preview');
-    const nilaiPreview = formSlot.querySelector('#f-nilai-preview');
-    const kmAwalInput = formSlot.querySelector('#f-kmawal');
-    const kmAkhirInput = formSlot.querySelector('#f-kmakhir');
-    const jarakPreview = formSlot.querySelector('#f-jarak-preview');
-    const belanjaInfoSlot = formSlot.querySelector('#belanja-info-slot');
+    const modal = openFormModal({
+      title: existing ? 'Edit Transaksi BBM' : 'Tambah Transaksi BBM',
+      subtitle: existing
+        ? `${escapeHtml(existing.kendaraan?.nopol || '-')} — ${jenisLabel(existing.jenis_bbm)}`
+        : 'Catat pemakaian Kupon BBM kendaraan.',
+      bodyHtml,
+      saveLabel: existing ? 'Simpan Perubahan' : 'Simpan',
+      onSave: async (body) => {
+        const alertSlot = body.querySelector('#form-alert');
+        alertSlot.innerHTML = '';
+        const tanggal = body.querySelector('#f-tanggal').value;
+        const kendaraan_id = kendaraanSelect.value;
+        const jenis_bbm = body.querySelector('#f-jenis').value;
+        const jumlah_kupon = Number(jumlahKuponInput.value);
+        const kilometer_awal = kmAwalInput.value ? Number(kmAwalInput.value) : null;
+        const kilometer_akhir = kmAkhirInput.value ? Number(kmAkhirInput.value) : null;
+
+        if (!tanggal || !kendaraan_id || !jenis_bbm) { showToast('Tanggal, Kendaraan, dan Jenis BBM wajib diisi.', 'warning'); return false; }
+        if (!currentRoda) { showToast('Kendaraan belum memiliki data Jenis Roda. Lengkapi di menu KIB Kendaraan terlebih dahulu.', 'warning'); return false; }
+        if (currentNilaiPerKupon === null) { showToast('Belum ada Pengadaan Kupon BBM (nominal per kupon) untuk roda ini pada Tahun Anggaran berjalan. Input dulu di menu Pengadaan Kupon BBM.', 'warning'); return false; }
+        if (!Number.isInteger(jumlah_kupon) || jumlah_kupon <= 0) { showToast('Jumlah Kupon harus bilangan bulat lebih dari 0.', 'warning'); return false; }
+        if (kilometer_awal !== null && kilometer_akhir !== null && kilometer_akhir < kilometer_awal) {
+          alertSlot.innerHTML = `<div class="alert alert--error">Kilometer Akhir tidak boleh lebih kecil dari Kilometer Awal. Periksa kembali odometer kendaraan.</div>`;
+          return false;
+        }
+
+        const payload = {
+          tahun_anggaran_id: tahunAnggaranId,
+          kendaraan_id,
+          belanja_id: resolvedBelanja?.id || null,
+          tanggal, jenis_bbm,
+          roda_kendaraan: currentRoda,
+          jumlah_kupon,
+          nilai_per_kupon: currentNilaiPerKupon,
+          kilometer_awal, kilometer_akhir,
+          pengemudi: body.querySelector('#f-pengemudi').value.trim() || null,
+          keterangan: body.querySelector('#f-ket').value.trim() || null,
+        };
+
+        if (existing) { await updateBbm(existing.id, payload); showToast('Perubahan berhasil disimpan.', 'success'); }
+        else { await createBbm(payload); showToast('Transaksi baru berhasil ditambahkan.', 'success'); }
+        refresh();
+      },
+      onClose: () => { if (triggerRow) triggerRow.classList.remove('is-editing'); },
+    });
+
+    const kendaraanSelect = modal.body.querySelector('#f-kendaraan');
+    const jumlahKuponInput = modal.body.querySelector('#f-jumlah-kupon');
+    const nilaiKuponPreview = modal.body.querySelector('#f-nilai-kupon-preview');
+    const nilaiPreview = modal.body.querySelector('#f-nilai-preview');
+    const kmAwalInput = modal.body.querySelector('#f-kmawal');
+    const kmAkhirInput = modal.body.querySelector('#f-kmakhir');
+    const jarakPreview = modal.body.querySelector('#f-jarak-preview');
+    const belanjaInfoSlot = modal.body.querySelector('#belanja-info-slot');
 
     let resolvedBelanja = null; // { id, kode_rekening, nama_belanja } | null
     let currentRoda = null;
@@ -206,49 +259,6 @@ export async function renderBbm(root, { tahunAnggaranId, profile }) {
         updatePreview();
       }
     }
-
-    formSlot.querySelector('#f-cancel').addEventListener('click', () => { formSlot.innerHTML = ''; });
-    formSlot.querySelector('#f-save').addEventListener('click', async () => {
-      const alertSlot = formSlot.querySelector('#form-alert');
-      alertSlot.innerHTML = '';
-      const tanggal = formSlot.querySelector('#f-tanggal').value;
-      const kendaraan_id = kendaraanSelect.value;
-      const jenis_bbm = formSlot.querySelector('#f-jenis').value;
-      const jumlah_kupon = Number(jumlahKuponInput.value);
-      const kilometer_awal = kmAwalInput.value ? Number(kmAwalInput.value) : null;
-      const kilometer_akhir = kmAkhirInput.value ? Number(kmAkhirInput.value) : null;
-
-      if (!tanggal || !kendaraan_id || !jenis_bbm) { showToast('Tanggal, Kendaraan, dan Jenis BBM wajib diisi.', 'warning'); return; }
-      if (!currentRoda) { showToast('Kendaraan belum memiliki data Jenis Roda. Lengkapi di menu KIB Kendaraan terlebih dahulu.', 'warning'); return; }
-      if (currentNilaiPerKupon === null) { showToast('Belum ada Pengadaan Kupon BBM (nominal per kupon) untuk roda ini pada Tahun Anggaran berjalan. Input dulu di menu Pengadaan Kupon BBM.', 'warning'); return; }
-      if (!Number.isInteger(jumlah_kupon) || jumlah_kupon <= 0) { showToast('Jumlah Kupon harus bilangan bulat lebih dari 0.', 'warning'); return; }
-      if (kilometer_awal !== null && kilometer_akhir !== null && kilometer_akhir < kilometer_awal) {
-        alertSlot.innerHTML = `<div class="alert alert--error">Kilometer Akhir tidak boleh lebih kecil dari Kilometer Awal. Periksa kembali odometer kendaraan.</div>`;
-        return;
-      }
-
-      const payload = {
-        tahun_anggaran_id: tahunAnggaranId,
-        kendaraan_id,
-        belanja_id: resolvedBelanja?.id || null,
-        tanggal, jenis_bbm,
-        roda_kendaraan: currentRoda,
-        jumlah_kupon,
-        nilai_per_kupon: currentNilaiPerKupon,
-        kilometer_awal, kilometer_akhir,
-        pengemudi: formSlot.querySelector('#f-pengemudi').value.trim() || null,
-        keterangan: formSlot.querySelector('#f-ket').value.trim() || null,
-      };
-
-      try {
-        if (existing) { await updateBbm(existing.id, payload); showToast('Perubahan berhasil disimpan.', 'success'); }
-        else { await createBbm(payload); showToast('Transaksi baru berhasil ditambahkan.', 'success'); }
-        formSlot.innerHTML = '';
-        refresh();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    });
   }
 
   if (canWrite) root.querySelector('#btn-add').addEventListener('click', () => openForm());

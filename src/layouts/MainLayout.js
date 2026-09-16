@@ -50,8 +50,8 @@ export async function mountAppShell(root, profile) {
   root.innerHTML = `
     <div class="shell">
       <div id="sidebar-slot"></div>
-      <div>
-        <div id="topbar-slot"></div>
+      <div class="shell__main">
+        <div id="topbar-slot" class="shell__topbar"></div>
         <main class="content" id="content-outlet"></main>
       </div>
     </div>

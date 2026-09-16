@@ -2,7 +2,7 @@ import { listPajak, createPajak, updatePajak, softDeletePajak, listKendaraanOpti
 import { computeJatuhTempoStatus, JENIS_PAJAK_OPTIONS } from '../validators/transaksiValidator.js';
 import { mountBelanjaPicker } from '../components/BelanjaPicker.js';
 import { formatRupiah } from '../utils/format.js';
-import { showToast, confirmDialog } from '../utils/ui.js';
+import { showToast, confirmDialog, openFormModal } from '../utils/ui.js';
 
 export async function renderPajak(root, { tahunAnggaranId, profile }) {
   if (!tahunAnggaranId) {
@@ -24,13 +24,11 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
     </div>
     <div id="summary-slot" class="kpi-grid" style="margin-bottom:16px;"></div>
     <div class="panel">
-      <div id="form-slot"></div>
       <div id="table-slot">${loadingRows()}</div>
     </div>
   `;
 
   const tableSlot = root.querySelector('#table-slot');
-  const formSlot = root.querySelector('#form-slot');
   const summarySlot = root.querySelector('#summary-slot');
 
   let kendaraanOptions = [];
@@ -77,8 +75,19 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
 
       tableSlot.querySelectorAll('[data-edit-id]').forEach((el) => {
         const row = rows.find((r) => r.id === el.dataset.editId);
-        el.addEventListener('click', () => openForm(row));
+        el.addEventListener('click', () => openForm(row, el.closest('tr')));
       });
+      if (canWrite) {
+        tableSlot.querySelectorAll('tbody tr').forEach((tr) => {
+          tr.style.cursor = 'pointer';
+          tr.title = 'Klik dua kali untuk mengedit';
+          tr.addEventListener('dblclick', () => {
+            const btn = tr.querySelector('[data-edit-id]');
+            if (!btn) return;
+            openForm(rows.find((r) => r.id === btn.dataset.editId), tr);
+          });
+        });
+      }
       tableSlot.querySelectorAll('[data-delete-id]').forEach((el) => {
         el.addEventListener('click', async () => {
           const ok = await confirmDialog({ title: 'Hapus Transaksi?', message: 'Data akan dipindahkan ke arsip.', danger: true });
@@ -108,13 +117,15 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
     `;
   }
 
-  async function openForm(existing = null) {
+  async function openForm(existing = null, triggerRow = null) {
     if (!kendaraanOptions.length) {
       showToast('Belum ada data Kendaraan. Tambahkan Kendaraan terlebih dahulu di menu KIB Kendaraan.', 'warning');
       return;
     }
-    formSlot.innerHTML = `
-      <div class="inline-form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+    if (triggerRow) triggerRow.classList.add('is-editing');
+
+    const bodyHtml = `
+      <div class="modal-form">
         <div class="field"><label>Tanggal *</label><input id="f-tanggal" type="date" value="${existing?.tanggal || todayStr()}" /></div>
         <div class="field"><label>Kendaraan (Nopol) *</label>
           <select id="f-kendaraan">${kendaraanOptions.map((k) => `<option value="${k.id}" ${existing?.kendaraan?.id === k.id ? 'selected' : ''}>${escapeHtml(k.nopol)} — ${escapeHtml(k.kib?.nama_barang || '')}</option>`).join('')}</select>
@@ -126,48 +137,52 @@ export async function renderPajak(root, { tahunAnggaranId, profile }) {
         <div class="field"><label>Masa Berlaku</label><input id="f-masaberlaku" type="date" value="${existing?.masa_berlaku || ''}" /></div>
         <div class="field"><label>Nilai (Rp) *</label><input id="f-nilai" type="number" min="0" value="${existing?.nilai ?? ''}" /></div>
         <div class="field"><label>Sumber Anggaran</label><input id="f-sumber" value="${escapeAttr(existing?.sumber_anggaran) || 'APBD'}" /></div>
-        <div id="belanja-picker-slot" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;"></div>
-        <div class="field" style="grid-column:1/-1;"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
-        <div class="field-actions">
-          <button class="btn btn-solid" id="f-save">${existing ? 'Simpan Perubahan' : 'Simpan'}</button>
-          <button class="btn btn-outline" id="f-cancel">Batal</button>
-        </div>
+        <div class="field field--wide"><label>Keterangan</label><input id="f-ket" value="${escapeAttr(existing?.keterangan)}" /></div>
+        <div class="form-section"><div class="form-section__title">Belanja Terkait</div></div>
+        <div id="belanja-picker-slot" class="field--wide" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;"></div>
       </div>
     `;
 
-    const picker = await mountBelanjaPicker(formSlot.querySelector('#belanja-picker-slot'), {
-      tahunAnggaranId, kelompok: 'pajak_perijinan', selectedBelanjaId: existing?.belanja?.id || null,
-    });
+    const modal = openFormModal({
+      title: existing ? 'Edit Pajak / Perijinan' : 'Tambah Transaksi Pajak / Perijinan',
+      subtitle: existing
+        ? `${escapeHtml(existing.kendaraan?.nopol || '-')} — ${jenisLabel(existing.jenis)}`
+        : 'Catat transaksi pajak atau perijinan kendaraan baru.',
+      bodyHtml,
+      saveLabel: existing ? 'Simpan Perubahan' : 'Simpan',
+      onSave: async (body) => {
+        const tanggal = body.querySelector('#f-tanggal').value;
+        const kendaraan_id = body.querySelector('#f-kendaraan').value;
+        const jenis = body.querySelector('#f-jenis').value;
+        const nilai = Number(body.querySelector('#f-nilai').value);
 
-    formSlot.querySelector('#f-cancel').addEventListener('click', () => { formSlot.innerHTML = ''; });
-    formSlot.querySelector('#f-save').addEventListener('click', async () => {
-      const tanggal = formSlot.querySelector('#f-tanggal').value;
-      const kendaraan_id = formSlot.querySelector('#f-kendaraan').value;
-      const jenis = formSlot.querySelector('#f-jenis').value;
-      const nilai = Number(formSlot.querySelector('#f-nilai').value);
+        if (!tanggal || !kendaraan_id || !jenis) { showToast('Tanggal, Kendaraan, dan Jenis wajib diisi.', 'warning'); return false; }
+        if (!Number.isFinite(nilai) || nilai < 0) { showToast('Nilai harus berupa angka dan tidak boleh negatif.', 'warning'); return false; }
 
-      if (!tanggal || !kendaraan_id || !jenis) { showToast('Tanggal, Kendaraan, dan Jenis wajib diisi.', 'warning'); return; }
-      if (!Number.isFinite(nilai) || nilai < 0) { showToast('Nilai harus berupa angka dan tidak boleh negatif.', 'warning'); return; }
+        const payload = {
+          tahun_anggaran_id: tahunAnggaranId,
+          kendaraan_id,
+          belanja_id: picker.getValue(),
+          tanggal,
+          jenis,
+          nomor_dokumen: body.querySelector('#f-nodok').value.trim() || null,
+          masa_berlaku: body.querySelector('#f-masaberlaku').value || null,
+          nilai,
+          sumber_anggaran: body.querySelector('#f-sumber').value.trim() || null,
+          keterangan: body.querySelector('#f-ket').value.trim() || null,
+        };
 
-      const payload = {
-        tahun_anggaran_id: tahunAnggaranId,
-        kendaraan_id,
-        belanja_id: picker.getValue(),
-        tanggal,
-        jenis,
-        nomor_dokumen: formSlot.querySelector('#f-nodok').value.trim() || null,
-        masa_berlaku: formSlot.querySelector('#f-masaberlaku').value || null,
-        nilai,
-        sumber_anggaran: formSlot.querySelector('#f-sumber').value.trim() || null,
-        keterangan: formSlot.querySelector('#f-ket').value.trim() || null,
-      };
-
-      try {
         if (existing) { await updatePajak(existing.id, payload); showToast('Perubahan berhasil disimpan.', 'success'); }
         else { await createPajak(payload); showToast('Transaksi baru berhasil ditambahkan.', 'success'); }
-        formSlot.innerHTML = '';
         refresh();
-      } catch (err) { showToast(err.message, 'error'); }
+      },
+      onClose: () => { if (triggerRow) triggerRow.classList.remove('is-editing'); },
+    });
+
+    // Picker Belanja dimuat async setelah modal terbuka agar modal langsung
+    // tampil tanpa menunggu request selesai.
+    const picker = await mountBelanjaPicker(modal.body.querySelector('#belanja-picker-slot'), {
+      tahunAnggaranId, kelompok: 'pajak_perijinan', selectedBelanjaId: existing?.belanja?.id || null,
     });
   }
 

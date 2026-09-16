@@ -238,10 +238,22 @@ button { font-family: inherit; }
 .sidebar__link.is-active { background: rgba(34, 211, 238, 0.12); color: var(--cyan-300); box-shadow: inset 2px 0 0 var(--cyan-400); }
 .sidebar__link .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.7; }
 
+/* Kolom kanan shell: jadi containing block untuk topbar yang sticky.
+   Tanpa ini, #topbar-slot hanya setinggi 64px sehingga `position: sticky`
+   pada .topbar tidak punya ruang untuk "menempel" dan topbar ikut tergulung. */
+.shell__main { display: flex; flex-direction: column; min-width: 0; }
+
+/* Yang ditempelkan adalah SLOT-nya, bukan .topbar di dalamnya, supaya tetap
+   menempel meskipun isi topbar dirender ulang (mis. saat ganti Tahun Anggaran). */
+.shell__topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--white);
+  box-shadow: 0 1px 0 var(--gray-100), 0 6px 16px -14px rgba(15, 23, 42, 0.5);
+}
+
 .topbar {
   height: 64px; display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px; background: var(--white); border-bottom: 1px solid var(--gray-100);
-  position: sticky; top: 0; z-index: 5;
 }
 .topbar__left { display: flex; align-items: center; gap: 14px; }
 .topbar__year-select {
